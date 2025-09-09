@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .game-container {
+            background-color: #2d3748;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+            max-width: 90vw;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 1rem;
+        }
+
+        canvas {
+            border-radius: 0.5rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+            cursor: pointer;
+            touch-action: none; /* Disable default touch actions */
+            background-color: #4a5568;
+        }
+
+        .status-message {
+            min-height: 2.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            transition: transform 0.2s, box-shadow 0.2s;
+            background-image: linear-gradient(to right, #4c51bf, #6b46c1);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #2d3748;
+            padding: 2rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.7);
+            transform: scale(0.9);
+            animation: modal-pop 0.3s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes modal-pop {
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1 class="text-3xl font-bold mb-4">Minesweeper</h1>
+
+        <div id="gameStatus" class="status-message text-xl text-yellow-300"></div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="button-group">
+            <button id="newGameBtn" class="btn">New Game</button>
+            <button id="toggleFlagBtn" class="btn">Toggle Flag</button>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalMessage" class="text-2xl font-bold mb-4"></h2>
+            <button id="modalCloseBtn" class="btn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const toggleFlagBtn = document.getElementById('toggleFlagBtn');
+        const gameStatus = document.getElementById('gameStatus');
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+        const TILE_SIZE = 30;
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 10;
+        const NUM_MINES = 10;
+
+        let board = [];
+        let visibleBoard = [];
+        let isGameOver = false;
+        let isWin = false;
+        let isFlagMode = false;
+
+        // Colors
+        const COLORS = {
+            TILE_UNREVEALED: '#a0aec0',
+            TILE_REVEALED: '#cbd5e0',
+            MINE_RED: '#f56565',
+            FLAG_YELLOW: '#ecc94b',
+            NUMBER_COLORS: [
+                'transparent',
+                '#3182ce', // 1
+                '#38a169', // 2
+                '#e53e3e', // 3
+                '#805ad5', // 4
+                '#dd6b20', // 5
+                '#4a5568', // 6
+                '#718096', // 7
+                '#a0aec0'  // 8
+            ]
+        };
+
+        function setCanvasDimensions() {
+            canvas.width = BOARD_WIDTH * TILE_SIZE;
+            canvas.height = BOARD_HEIGHT * TILE_SIZE;
+        }
+
+        function initBoard() {
+            board = Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(0));
+            visibleBoard = Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(' '));
+        }
+
+        function placeMines() {
+            let minesPlaced = 0;
+            while (minesPlaced < NUM_MINES) {
+                const x = Math.floor(Math.random() * BOARD_WIDTH);
+                const y = Math.floor(Math.random() * BOARD_HEIGHT);
+                if (board[y][x] !== 'M') {
+                    board[y][x] = 'M';
+                    minesPlaced++;
+                }
+            }
+        }
+
+        function calculateNumbers() {
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    if (board[y][x] === 'M') continue;
+
+                    let count = 0;
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const nx = x + dx;
+                            const ny = y + dy;
+                            if (nx >= 0 && nx < BOARD_WIDTH && ny >= 0 && ny < BOARD_HEIGHT && board[ny][nx] === 'M') {
+                                count++;
+                            }
+                        }
+                    }
+                    board[y][x] = count;
+                }
+            }
+        }
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    const tileX = x * TILE_SIZE;
+                    const tileY = y * TILE_SIZE;
+
+                    // Draw the tile background
+                    ctx.fillStyle = visibleBoard[y][x] !== ' ' ? COLORS.TILE_REVEALED : COLORS.TILE_UNREVEALED;
+                    ctx.fillRect(tileX, tileY, TILE_SIZE, TILE_SIZE);
+                    ctx.strokeStyle = '#2d3748';
+                    ctx.strokeRect(tileX, tileY, TILE_SIZE, TILE_SIZE);
+
+                    const content = visibleBoard[y][x];
+
+                    if (content === 'F') { // Flag
+                        ctx.fillStyle = COLORS.FLAG_YELLOW;
+                        ctx.beginPath();
+                        ctx.moveTo(tileX + TILE_SIZE * 0.25, tileY + TILE_SIZE * 0.75);
+                        ctx.lineTo(tileX + TILE_SIZE * 0.75, tileY + TILE_SIZE * 0.75);
+                        ctx.lineTo(tileX + TILE_SIZE * 0.5, tileY + TILE_SIZE * 0.25);
+                        ctx.fill();
+                    } else if (content === 'M') { // Mine
+                        ctx.fillStyle = COLORS.MINE_RED;
+                        ctx.beginPath();
+                        ctx.arc(tileX + TILE_SIZE / 2, tileY + TILE_SIZE / 2, TILE_SIZE / 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (content !== ' ' && content !== 0) { // Number
+                        ctx.fillStyle = COLORS.NUMBER_COLORS[content];
+                        ctx.font = `${TILE_SIZE * 0.6}px Inter`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(content, tileX + TILE_SIZE / 2, tileY + TILE_SIZE / 2);
+                    }
+                }
+            }
+        }
+
+        function revealCell(x, y) {
+            if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT || visibleBoard[y][x] !== ' ' || isGameOver) {
+                return;
+            }
+
+            if (board[y][x] === 'M') {
+                isGameOver = true;
+                visibleBoard[y][x] = 'M';
+                endGame(false);
+                return;
+            }
+
+            visibleBoard[y][x] = board[y][x];
+
+            // Recursive reveal for empty cells
+            if (board[y][x] === 0) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        revealCell(x + dx, y + dy);
+                    }
+                }
+            }
+
+            checkWin();
+        }
+
+        function checkWin() {
+            let hiddenCells = 0;
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    if (visibleBoard[y][x] === ' ' || visibleBoard[y][x] === 'F') {
+                        hiddenCells++;
+                    }
+                }
+            }
+            if (hiddenCells === NUM_MINES) {
+                isWin = true;
+                isGameOver = true;
+                endGame(true);
+            }
+        }
+
+        function endGame(won) {
+            isGameOver = true;
+            if (won) {
+                modalMessage.textContent = "Congratulations! You win!";
+            } else {
+                modalMessage.textContent = "KABOOM! Game Over!";
+            }
+            // Reveal all mines on game over
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    if (board[y][x] === 'M') {
+                        visibleBoard[y][x] = 'M';
+                    }
+                }
+            }
+            drawBoard();
+            messageModal.style.display = 'flex';
+        }
+
+        function initGame() {
+            setCanvasDimensions();
+            initBoard();
+            placeMines();
+            calculateNumbers();
+            drawBoard();
+            isGameOver = false;
+            isWin = false;
+            gameStatus.textContent = "Click to reveal, right-click to flag!";
+            messageModal.style.display = 'none';
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', (event) => {
+            if (isGameOver) return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = Math.floor(((event.clientX - rect.left) * scaleX) / TILE_SIZE);
+            const y = Math.floor(((event.clientY - rect.top) * scaleY) / TILE_SIZE);
+
+            if (event.button === 0) { // Left-click
+                if (isFlagMode) {
+                    if (visibleBoard[y][x] === 'F') {
+                        visibleBoard[y][x] = ' ';
+                    } else if (visibleBoard[y][x] === ' ') {
+                        visibleBoard[y][x] = 'F';
+                    }
+                    drawBoard();
+                } else {
+                    if (visibleBoard[y][x] === ' ') {
+                        revealCell(x, y);
+                        drawBoard();
+                    }
+                }
+            } else if (event.button === 2) { // Right-click (native)
+                 if (visibleBoard[y][x] === 'F') {
+                    visibleBoard[y][x] = ' ';
+                } else if (visibleBoard[y][x] === ' ') {
+                    visibleBoard[y][x] = 'F';
+                }
+                drawBoard();
+            }
+        });
+
+        // Touch event handling for mobile devices
+        canvas.addEventListener('touchstart', (event) => {
+            event.preventDefault(); // Prevent default browser behavior like scrolling
+            if (isGameOver) return;
+            const touch = event.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = Math.floor(((touch.clientX - rect.left) * scaleX) / TILE_SIZE);
+            const y = Math.floor(((touch.clientY - rect.top) * scaleY) / TILE_SIZE);
+
+            // Use a long press for flagging on mobile
+            if (!isFlagMode) {
+                 if (visibleBoard[y][x] === ' ') {
+                    revealCell(x, y);
+                    drawBoard();
+                }
+            } else {
+                if (visibleBoard[y][x] === 'F') {
+                    visibleBoard[y][x] = ' ';
+                } else if (visibleBoard[y][x] === ' ') {
+                    visibleBoard[y][x] = 'F';
+                }
+                drawBoard();
+            }
+        }, { passive: false });
+
+
+        newGameBtn.addEventListener('click', initGame);
+
+        toggleFlagBtn.addEventListener('click', () => {
+            isFlagMode = !isFlagMode;
+            gameStatus.textContent = isFlagMode ? "Flag mode is ON." : "Click to reveal, right-click to flag!";
+            toggleFlagBtn.classList.toggle('bg-purple-700');
+            toggleFlagBtn.classList.toggle('bg-blue-600');
+        });
+
+        modalCloseBtn.addEventListener('click', initGame);
+
+        // Initial call to set up the game
+        initGame();
+
+    </script>
+</body>
+</html>
