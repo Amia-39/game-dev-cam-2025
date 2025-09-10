@@ -5,9 +5,28 @@ function mySquareFunction(){
     let myAnswer = myIn01 * myIn01
     document.getElementById('mySpan01').innerHTML = '  ' + myIn01 + ' squared happens to be ' + myAnswer
 }
+
+function sumSecondNumbers() {
+    let myArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+    for (let i = myArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+            [myArray[i], myArray[j]] = [myArray[j], myArray[i]];
+        }
+
+        let sumOfNumbers = 0;
+
+        for (let i = 1; i < myArray.length; i += 2) {
+            sumOfNumbers += myArray[i];
+        }
+
+        document.getElementById('myArrayOutput').innerHTML = 'The randomized array is: [' + myArray.join(', ') + ']<br>The sum of every second number is: ' + sumOfNumbers;
+    }
 </script>
 
 <h2 align=center>t1a02-video-flac-cam.html</h2>
+
+<h3>Square a number?</h3>
 
 Input: <input id="myNum01" type=number value="4" ><br>
 
@@ -16,3 +35,13 @@ Event:<input type=button value="square thy number" onclick="{
 }"><br>
 
 Output:<span id="mySpan01">Press button for square</span>
+
+<hr>
+
+<h3>Check out an array?</h3>
+
+Event: <input type=button value="Sum every second number" onclick="{
+    sumSecondNumbers()
+}"><br>
+
+Output: <span id="myArrayOutput">Press button to see the result</span>
