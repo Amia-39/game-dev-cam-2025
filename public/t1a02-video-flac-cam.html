@@ -34,7 +34,9 @@
             firstName: "John",
             lastName: "Doe",
             age: "At Least 30",
-            city: "One of Them"
+            city: "One of Them",
+            job: "Soldier in the U.S. Army",
+            gameOrigin: "Team Foretress 2"
         };
         let output = `Name: ${myInfoObject.firstName} ${myInfoObject.lastName}<br>Age: ${myInfoObject.age}<br>City: ${myInfoObject.city}`;
         document.getElementById('myObjectOutput').innerHTML = output;
@@ -67,4 +69,4 @@ Output: <span id="myArrayOutput"> Press button for array</span>
 Event: <input type=button value="Display Object Info" onclick="{
     displayMyObject()
 }"><br>
-Output: <span id="myObjectOutput">Press button to display object info</span>
+Output: <span id="myObjectOutput">Press button for object</span>
