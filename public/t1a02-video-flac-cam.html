@@ -1,23 +1,22 @@
 <script>
+    function mySquareFunction() {
+        let myIn01 = parseFloat(document.getElementById('myNum01').value);
+        let myAnswer = myIn01 * myIn01;
 
-function mySquareFunction(){
-    let myIn01 = parseFloat(document.getElementById('myNum01').value)
-    let myAnswer = myIn01 * myIn01
-
-    if (Math.floor(Math.random() * 10) === 0) {
+        if (Math.floor(Math.random() * 10) === 0) {
             document.getElementById('myImageOutput').innerHTML = '<br><img src="https://balatrowiki.org/images/Lucky_Cat.png?119bf">';
         } else {
             document.getElementById('myImageOutput').innerHTML = '';
         }
-    
-    document.getElementById('mySpan01').innerHTML = '  ' + myIn01 + ' squared happens to be ' + myAnswer
-}
 
-function sumSecondNumbers() {
-    let myArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+        document.getElementById('mySpan01').innerHTML = '  ' + myIn01 + ' squared happens to be ' + myAnswer;
+    }
 
-    for (let i = myArray.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+    function sumSecondNumbers() {
+        let myArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        for (let i = myArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
             [myArray[i], myArray[j]] = [myArray[j], myArray[i]];
         }
 
@@ -29,6 +28,17 @@ function sumSecondNumbers() {
 
         document.getElementById('myArrayOutput').innerHTML = ' ' + 'Randomized array [' + myArray.join(', ') + ']<br>Thy sum of numbers is ' + sumOfNumbers;
     }
+
+    function displayMyObject() {
+        let myInfoObject = {
+            firstName: "John",
+            lastName: "Doe",
+            age: 30,
+            city: "New York"
+        };
+        let output = `Name: ${myInfoObject.firstName} ${myInfoObject.lastName}<br>Age: ${myInfoObject.age}<br>City: ${myInfoObject.city}`;
+        document.getElementById('myObjectOutput').innerHTML = output;
+    }
 </script>
 
 <h1 align=center>t1a02-video-flac-cam.html</h1>
@@ -36,22 +46,25 @@ function sumSecondNumbers() {
 <hr>
 
 <h3>Square a number?</h3>
-
-Input: <input id="myNum01" type=number value="4" ><br>
-
-Event:<input type=button value="square thy number" onclick="{
-        mySquareFunction()
+Input: <input id="myNum01" type=number value="4"><br>
+Event: <input type=button value="square thy number" onclick="{
+    mySquareFunction()
 }"><br>
-
-Output:<span id="mySpan01"> Press button for square</span>
+Output: <span id="mySpan01"> Press button for square</span>
 <div id="myImageOutput"></div>
 
 <hr>
 
 <h3>Check out an array?</h3>
-
 Event: <input type=button value="Sum thy secondary numbers" onclick="{
     sumSecondNumbers()
 }"><br>
-
 Output: <span id="myArrayOutput"> Press button for array</span>
+
+<hr>
+
+<h3>Display an object?</h3>
+Event: <input type=button value="Display Object Info" onclick="{
+    displayMyObject()
+}"><br>
+Output: <span id="myObjectOutput">Press button to display object info</span>
