@@ -25,11 +25,6 @@
         for (let i = 1; i < myArray.length; i += 2) {
             sumOfNumbers += myArray[i];
         }
-        if (Math.floor(Math.random() * 10) === 0) {
-            document.getElementById('myImageOutput').innerHTML = '<br><img src="https://balatrowiki.org/images/Lucky_Cat.png?119bf">';
-        } else {
-            document.getElementById('myImageOutput').innerHTML = '';
-        }
 
         document.getElementById('myArrayOutput').innerHTML = ' ' + 'Randomized array [' + myArray.join(', ') + ']<br>Thy sum of numbers is ' + sumOfNumbers;
     }
@@ -44,13 +39,7 @@
             gameOrigin: "Team Foretress 2",
         };
 
-        if (Math.floor(Math.random() * 10) === 0) {
-            document.getElementById('myImageOutput').innerHTML = '<br><img src="https://balatrowiki.org/images/Lucky_Cat.png?119bf">';
-        } else {
-            document.getElementById('myImageOutput').innerHTML = '';
-        }
-
-        let output = `Name: ${myInfoObject.firstName} ${myInfoObject.lastName}<br>Age: ${myInfoObject.age}<br>City: ${myInfoObject.city}<br>job: ${myInfoObject.job}<br>gameOrigin: ${myInfoObject.gameOrigin}`;
+        let output = `Name: ${myInfoObject.firstName} ${myInfoObject.lastName}<br>Age: ${myInfoObject.age}<br>City: ${myInfoObject.city}<br>Job: ${myInfoObject.job}<br>Game Origin: ${myInfoObject.gameOrigin}`;
         document.getElementById('myObjectOutput').innerHTML = output;
     }
 </script>
