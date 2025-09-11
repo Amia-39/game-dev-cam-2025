@@ -30,17 +30,23 @@
     }
 
     function displayMyObject() {
-        let myInfoObject = {
-            firstName: "John",
-            lastName: "Doe",
-            age: "At Least 30",
-            city: "One of Them",
-            job: "Soldier in the U.S. Army",
-            gameOrigin: "Team Foretress 2",
-        };
+        const myObjectArray = [
+            {
+                game: "Celeste",
+            },
+            {
+                game: "Balatro",
+            },
+            {
+                game: "Hades",
+            }
+        ];
 
-        let output = `Name: ${myInfoObject.firstName} ${myInfoObject.lastName}<br>Age: ${myInfoObject.age}<br>City: ${myInfoObject.city}<br>Job: ${myInfoObject.job}<br>Game Origin: ${myInfoObject.gameOrigin}`;
-        document.getElementById('myObjectOutput').innerHTML = output;
+        const randomIndex = Math.floor(Math.random() * myObjectArray.length);
+        const randomObject = myObjectArray[randomIndex];
+
+        let output = `Game: ${randomObject.game}`;
+        document.getElementById('myObjectOutput').innerHTML = 'You Should Play ' + output;
     }
 </script>
 
@@ -67,8 +73,8 @@ Output: <span id="myArrayOutput"> Press button for array</span>
 <hr>
 
 <h3>Display an object?</h3>
-Event: <input type=button value="Display Object Info" onclick="{
+Event: <input type=button value="Display thy Object" onclick="{
     displayMyObject()
 }"><br>
-Output:<br>
-<span id="myObjectOutput">Press button for object</span>
+Output: <br>
+<span id="myObjectOutput"> Press button for object</span>
