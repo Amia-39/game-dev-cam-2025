@@ -1,168 +1,65 @@
 <script>
+    const myObjectArray = [{ game: "Celeste" },
+                           { game: "Balatro" },
+                           { game: "Hades" },
+                           { game: "Minecraft" },
+                           { game: "Project Sekai" },
+                           { game: "Cult of the Lamb" },
+                           { game: "Silksong" },
+                           { game: "Mario Kart" },
+                           { game: "Pokemon" },
+                           { game: "Lethal Company" },
+                           { game: "REPO" }];
+
     function mySquareFunction() {
         let myIn01 = parseFloat(document.getElementById('myNum01').value);
         let myAnswer = myIn01 * myIn01;
-
         if (Math.floor(Math.random() * 10) === 0) {
             document.getElementById('myImageOutput').innerHTML = '<br><img src="https://balatrowiki.org/images/Lucky_Cat.png?119bf">';
         } else {
             document.getElementById('myImageOutput').innerHTML = '';
         }
-
         document.getElementById('mySpan01').innerHTML = '  ' + myIn01 + ' squared happens to be ' + myAnswer;
     }
 
     function sumSecondNumbers() {
         let myArray = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
         for (let i = myArray.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [myArray[i], myArray[j]] = [myArray[j], myArray[i]];
         }
-
         let sumOfNumbers = 0;
-
         for (let i = 1; i < myArray.length; i += 2) {
             sumOfNumbers += myArray[i];
         }
-
         document.getElementById('myArrayOutput').innerHTML = ' ' + 'Randomized array [' + myArray.join(', ') + ']<br>Thy sum of numbers is ' + sumOfNumbers;
     }
 
     function displayMyObject() {
-        const myObjectArray = [
-            {
-                game: "Celeste",
-            },
-            {
-                game: "Balatro",
-            },
-            {
-                game: "Hades",
-            },
-            {
-                game: "Minecraft",
-            },
-            {
-                game: "Project Sekai",
-            },
-            {
-                game: "Cult of the Lamb",
-            },
-            {
-                game: "Silksong",
-            },
-            {
-                game: "Mario Kart",
-            },
-            {
-                game: "Pokemon",
-            },
-            {
-                game: "Elden Ring",
-            },
-            {
-                game: "Stellaris",
-            },
-            {
-                game: "Lethal Company",
-            },
-            {
-                game: "REPO",
-            },
-            {
-                game: "Clash of Clans",
-            }
-        ];
         const randomIndex = Math.floor(Math.random() * myObjectArray.length);
         const randomObject = myObjectArray[randomIndex];
-
         let output = `You Should Play: ${randomObject.game}`;
         document.getElementById('myObjectOutput').innerHTML = output;
     }
 
     function displayAllObjects() {
-        const myObjectArray = [
-            {
-                game: "Celeste",
-            },
-            {
-                game: "Balatro",
-            },
-            {
-                game: "Hades",
-            },
-            {
-                game: "Minecraft",
-            },
-            {
-                game: "Project Sekai",
-            },
-            {
-                game: "Cult of the Lamb",
-            },
-            {
-                game: "Silksong",
-            },
-            {
-                game: "Mario Kart",
-            },
-            {
-                game: "Pokemon",
-            },
-            {
-                game: "Elden Ring",
-            },
-            {
-                game: "Stellaris",
-            },
-            {
-                game: "Lethal Company",
-            },
-            {
-                game: "REPO",
-            },
-            {
-                game: "Clash of Clans",
-            }
-        ];
-
         let output = ""; 
         for (let i = 0; i < myObjectArray.length; i++) {
-            output += ` ${myObjectArray[i].game} <br>`; 
+            output += `You Should Play: ${myObjectArray[i].game} <br>`; 
         }
         document.getElementById('myObjectOutput').innerHTML = output;
     }
 </script>
-
-<h1 align=center>t1a02-video-flac-cam.html</h1>
-
-<hr>
-
+<h1 align=center>t1a02-video-flac-cam.html</h1><hr>
 <h3>Square a number?</h3>
 Input: <input id="myNum01" type=number value="4"><br>
-Event: <input type=button value="square thy number" onclick="{
-    mySquareFunction()
-}"><br>
+Event: <input type=button value="square thy number" onclick="{mySquareFunction()}"><br>
 Output: <span id="mySpan01"> Press button for square</span>
-<div id="myImageOutput"></div>
-
-<hr>
-
+<div id="myImageOutput"></div><hr>
 <h3>Check out an array?</h3>
-Event: <input type=button value="Sum thy secondary numbers" onclick="{
-    sumSecondNumbers()
-}"><br>
-Output: <span id="myArrayOutput"> Press button for array</span>
-
-<hr>
-
+Event: <input type=button value="Sum thy secondary numbers" onclick="{sumSecondNumbers()}"><br>
+Output: <span id="myArrayOutput"> Press button for array</span><hr>
 <h3>Display an object?</h3>
-Event: <input type=button value="Display thy random Object" onclick="{
-    displayMyObject()
-}"><br>
-<input type=button value="Display all thy Objects" onclick="{
-    displayAllObjects()
-}"><br>
-Output: <br>
-<span id="myObjectOutput"> Press button for object</span>
+Event: <input type=button value="Display a random Object" onclick="{displayMyObject()}"><br>
+<input type=button value="Display all Objects" onclick="{displayAllObjects()}"><br>
+Output: <br> <span id="myObjectOutput"> Press button for object</span>
