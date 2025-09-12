@@ -24,14 +24,6 @@
         const firstObject = myObjectArray[0];
         document.getElementById('myObjectOutput').innerHTML = `You Should Play: ${firstObject.game}`;
     }
-
-    function displayAllObjects() {
-        let output = ""; 
-        for (let i = 0; i < myObjectArray.length; i++) {
-            output += `You Should Play: ${myObjectArray[i].game} <br>`; 
-        }
-        document.getElementById('myObjectOutput').innerHTML = output;
-    }
 </script>
 <h1 align=center>t1a02-video-flac-cam.html</h1><hr>
 <h3>Square a number?</h3>
@@ -44,5 +36,4 @@ Event: <input type=button value="Sum thy secondary numbers" onclick="{sumSecondN
 Output: <span id="myArrayOutput"> Press button for array</span><hr>
 <h3>Display an object?</h3>
 Event: <input type=button value="Display the first Object" onclick="{displayMyObject()}"><br>
-<input type=button value="Display all Objects" onclick="{displayAllObjects()}"><br>
 Output: <br> <span id="myObjectOutput"> Press button for object</span>
