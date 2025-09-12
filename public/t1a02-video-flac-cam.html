@@ -1,24 +1,15 @@
 <script>
     const myObjectArray = [{ game: "Celeste" },
-                           { game: "Balatro" },
-                           { game: "Hades" },
-                           { game: "Minecraft" },
-                           { game: "Project Sekai" },
-                           { game: "Cult of the Lamb" },
-                           { game: "Silksong" },
-                           { game: "Mario Kart" },
-                           { game: "Pokemon" },
-                           { game: "Lethal Company" },
-                           { game: "REPO" }];
+         { game: "Balatro" }, { game: "Hades" },
+         { game: "Minecraft" }, { game: "Project Sekai" },
+         { game: "Cult of the Lamb" }, { game: "Silksong" },
+         { game: "Mario Kart" }, { game: "Pokemon" },
+         { game: "Lethal Company" }, { game: "REPO" }];
 
     function mySquareFunction() {
         let myIn01 = parseFloat(document.getElementById('myNum01').value);
         let myAnswer = myIn01 * myIn01;
-        if (Math.floor(Math.random() * 10) === 0) {
-            document.getElementById('myImageOutput').innerHTML = '<br><img src="https://balatrowiki.org/images/Lucky_Cat.png?119bf">';
-        } else {
-            document.getElementById('myImageOutput').innerHTML = '';
-        }
+        
         document.getElementById('mySpan01').innerHTML = '  ' + myIn01 + ' squared happens to be ' + myAnswer;
     }
 
