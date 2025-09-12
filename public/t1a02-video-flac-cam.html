@@ -75,11 +75,12 @@
             }
         ];
 
-        const randomIndex = Math.floor(Math.random() * myObjectArray.length);
-        const randomObject = myObjectArray[randomIndex];
-
-        let output = `You Should Play: ${randomObject.game}`;
-        document.getElementById('myObjectOutput').innerHTML = output;
+        let output = ""; // Initialize output variable
+        for (let i = 0; i < myObjectArray.length; i++) {
+            // Add a loop to iterate through the array of objects
+            output += `You Should Play: ${myObjectArray[i].game} <br>`; // Append each game to the output
+        }
+        document.getElementById('myObjectOutput').innerHTML = output; // Display the full list
     }
 </script>
 
