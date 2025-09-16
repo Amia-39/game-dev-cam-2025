@@ -1,0 +1,70 @@
+<h5>Version 0.0.2</h5>
+
+<h1 align=center>t1a03-lists+tables-cam.html</h1>
+
+<h2>Lists</h2>
+
+<ol>Ordered list of Favourite Foods
+  <li>Uhm...
+  <li>How About...
+  <li>Uhh...
+  <li>Maybe...
+  <li>I Don't know
+</ol>
+
+<ul>Unordered list of Countries
+  <li>Canada
+  <li>Germany
+  <li>France
+  <li>Japan
+  <li>Denmark
+</ul>
+
+<b>Assignment</b>. a list inside a list<br><br>
+
+<ul>list of lists
+  <li>list one<ol>
+	<li>item 1-1
+	<li>item 1-2
+	<li>item 1-3
+  </ol>
+  <li>list two<ol>
+	<li>item 2-1
+	<li>item 2-2
+	<li>item 2-3
+  </ol>
+  <li>list three<ol>
+	<li>item 3-1
+	<li>item 3-2
+	<li>item 3-3
+  </ol>
+</ul>
+
+<h2> tables</h2>
+
+<table border=1>
+  <tr><td>A</td><td>B</td></tr>
+  <tr><td>1</td><td>2</td></tr>
+</table><br>
+
+<b>Assignment</b>. a 3 x 4 table, and a table with a link, image, and border = 0<br><br>
+
+<table border=0>
+  <tr><td>1-1</td><td>1-2</td><td>1-3</td></tr>
+  <tr><td>2-1</td><td><a href="https://google.ca">Woah a Link</a></td><td>2-3</td></tr>
+  <tr><td>3-1</td><td><img width=100 src="https://balatrowiki.org/images/Gold_stake.png?2f793"/></td><td>3-3</td></tr>
+  <tr><td>4-1</td><td>4-2</td><td>4-3</td></tr>
+ </table>
+ 
+ <h2>Advanced</h2>
+ 
+ load an image and get it to move 10 pixels left with the button below<br>
+ 
+ <image id="myImage01" src="https://balatrowiki.org/images/Purple_stake.png?703c6" style="position:relative; left:0; top:0; width:50; height:50; "><br>
+ 
+ <input type=button value="Go Left" onclick="{
+	document.getElementById('myImage01').style.left = '-10px'
+	document.getElementById('myDiv01').innerHTML = 'It Went Left'
+}">
+
+<div id="myDiv01">...</div>
