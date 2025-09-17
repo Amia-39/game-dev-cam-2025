@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        :root {
+            --bg-color: #2c3e50;
+            --snake-color: #27ae60;
+            --food-color: #e74c3c;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --card-bg: #34495e;
+            --text-color: #ecf0f1;
+            --border-radius: 12px;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 25px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 20px var(--shadow-color);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--text-color);
+            text-align: center;
+            margin-bottom: 10px;
+            letter-spacing: 1.5px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 20px;
+            background-color: #2f4458;
+            border-radius: var(--border-radius);
+            font-size: 1.2em;
+            font-weight: 700;
+            box-shadow: inset 0 2px 5px var(--shadow-color);
+        }
+
+        .score-board span {
+            padding: 5px 10px;
+        }
+
+        #score {
+            color: var(--snake-color);
+        }
+
+        #high-score {
+            color: var(--food-color);
+        }
+
+        canvas {
+            background-color: #282828;
+            border: 5px solid #34495e;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px var(--shadow-color);
+            display: block;
+        }
+        
+        /* General popup styling */
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            transition: all 0.3s ease-in-out;
+            min-width: 250px;
+        }
+
+        .popup.show {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        .popup p {
+            margin: 0 0 20px 0;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .popup button {
+            background-color: var(--snake-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .popup button:hover {
+            background-color: #219653;
+        }
+
+        .color-picker-box {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px var(--shadow-color);
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .color-picker-box.hidden {
+            display: none;
+        }
+
+        .color-picker-box h2 {
+            font-size: 1.5em;
+            margin: 0 0 10px 0;
+        }
+
+        #colorPicker {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 60px;
+            height: 60px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 0 4px #2f4458, 0 0 0 6px #5e7388;
+        }
+
+        #colorPicker::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+
+        #colorPicker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        #color-button {
+            background-color: var(--snake-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #color-button:hover {
+            background-color: #219653;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Color Picker Box -->
+        <div id="color-picker-box" class="color-picker-box">
+            <h2>Snake Color</h2>
+            <p id="picker-message">Score 1 point to unlock!</p>
+            <input type="color" id="colorPicker" value="#27ae60">
+            <button id="color-button">Apply</button>
+        </div>
+
+        <div class="game-container">
+            <h1>Snake Game</h1>
+            <div class="score-board">
+                <span>Score: <span id="score">0</span></span>
+                <span>High Score: <span id="high-score">0</span></span>
+            </div>
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+    </div>
+
+    <!-- General Message Popup (for Game Over) -->
+    <div id="message-popup" class="popup">
+        <p id="message-text"></p>
+        <button id="message-button">OK</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreSpan = document.getElementById('score');
+        const highScoreSpan = document.getElementById('high-score');
+        const messagePopup = document.getElementById('message-popup');
+        const messageText = document.getElementById('message-text');
+        const messageButton = document.getElementById('message-button');
+        const colorPickerBox = document.getElementById('color-picker-box');
+        const pickerMessage = document.getElementById('picker-message');
+        const colorPicker = document.getElementById('colorPicker');
+        const colorButton = document.getElementById('color-button');
+
+        const gridSize = 20;
+        let snake = [{ x: 10, y: 15 }];
+        let food = {};
+        let direction = { x: 0, y: 0 };
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameLoopId;
+        let gameSpeed = 150;
+        let snakeColor = '#27ae60';
+        let isPaused = false;
+        let lastUpdateTime = 0;
+        let hasChosenColor = false;
+        let isSpecialFood = false;
+
+        highScoreSpan.textContent = highScore;
+        colorPicker.disabled = true;
+        colorButton.style.display = 'none';
+
+        function showMessage(text, onDismiss) {
+            isPaused = true;
+            messageText.textContent = text;
+            messagePopup.classList.add('show');
+            messageButton.onclick = () => {
+                messagePopup.classList.remove('show');
+                isPaused = false;
+                if (onDismiss) onDismiss();
+                gameLoop();
+            };
+        }
+
+        function generateFood() {
+            isSpecialFood = Math.random() < 0.1; // 1 in 10 chance
+            food = {
+                x: Math.floor(Math.random() * (canvas.width / gridSize)),
+                y: Math.floor(Math.random() * (canvas.height / gridSize))
+            };
+            // Ensure food does not spawn on the snake
+            for (const segment of snake) {
+                if (segment.x === food.x && segment.y === food.y) {
+                    generateFood();
+                    break;
+                }
+            }
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw snake with the selected color
+            ctx.fillStyle = snakeColor;
+            snake.forEach(segment => {
+                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+            });
+
+            // Draw food
+            ctx.fillStyle = isSpecialFood ? '#FFD700' : '#e74c3c';
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+        }
+
+        function update() {
+            if (isPaused) {
+                return;
+            }
+
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+            if (head.x < 0 || head.x >= canvas.width / gridSize || head.y < 0 || head.y >= canvas.height / gridSize) {
+                gameOver();
+                return;
+            }
+
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                if (isSpecialFood) {
+                    score += 5;
+                } else {
+                    score += 1;
+                }
+                scoreSpan.textContent = score;
+                generateFood();
+                if (score % 5 === 0 && gameSpeed > 50) {
+                    gameSpeed -= 10;
+                }
+                
+                if (score > 0 && !hasChosenColor) {
+                    isPaused = true;
+                    pickerMessage.textContent = 'Choose a new color!';
+                    colorPicker.disabled = false;
+                    colorButton.style.display = 'block';
+                    hasChosenColor = true;
+                }
+            } else {
+                snake.pop();
+            }
+
+            draw();
+        }
+
+        function gameLoop(timestamp) {
+            const deltaTime = timestamp - lastUpdateTime;
+            if (deltaTime > gameSpeed) {
+                lastUpdateTime = timestamp;
+                update();
+            }
+
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            cancelAnimationFrame(gameLoopId);
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                highScoreSpan.textContent = highScore;
+                showMessage(`Game Over! New High Score: ${highScore}`, initGame);
+            } else {
+                showMessage(`Game Over! Your Score: ${score}`, initGame);
+            }
+        }
+
+        function handleKeyPress(event) {
+            const key = event.key;
+            if (isPaused) {
+                return;
+            }
+            switch (key) {
+                case 'ArrowUp':
+                    if (direction.y === 0) direction = { x: 0, y: -1 };
+                    break;
+                case 'ArrowDown':
+                    if (direction.y === 0) direction = { x: 0, y: 1 };
+                    break;
+                case 'ArrowLeft':
+                    if (direction.x === 0) direction = { x: -1, y: 0 };
+                    break;
+                case 'ArrowRight':
+                    if (direction.x === 0) direction = { x: 1, y: 0 };
+                    break;
+            }
+            if (direction.x === 0 && direction.y === 0) {
+                // Do nothing if direction is not set
+            } else if (!gameLoopId) {
+                gameLoop();
+            }
+        }
+
+        function initGame() {
+            snake = [{ x: 10, y: 15 }];
+            direction = { x: 0, y: 0 };
+            score = 0;
+            scoreSpan.textContent = score;
+            gameSpeed = 150;
+            snakeColor = '#27ae60';
+            generateFood();
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+            isPaused = false;
+            hasChosenColor = false;
+            pickerMessage.textContent = 'Score 1 point to unlock!';
+            colorPicker.disabled = true;
+            colorButton.style.display = 'none';
+        }
+
+        colorPicker.addEventListener('input', (e) => {
+            snakeColor = e.target.value;
+            draw();
+        });
+
+        colorButton.addEventListener('click', () => {
+            isPaused = false;
+        });
+
+        document.addEventListener('keydown', handleKeyPress);
+        
+        initGame();
+    </script>
+</body>
+</html>
