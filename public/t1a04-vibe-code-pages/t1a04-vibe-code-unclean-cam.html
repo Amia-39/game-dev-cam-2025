@@ -35,6 +35,7 @@
             display: flex;
             gap: 40px;
             align-items: center;
+            justify-content: center;
         }
 
         .game-container {
@@ -142,7 +143,7 @@
             background-color: #219653;
         }
 
-        .color-picker-box {
+        .control-box {
             background-color: var(--card-bg);
             padding: 20px;
             border-radius: var(--border-radius);
@@ -151,13 +152,14 @@
             align-items: center;
             gap: 15px;
             text-align: center;
+            min-width: 200px;
         }
 
-        .color-picker-box.hidden {
+        .control-box.hidden {
             display: none;
         }
 
-        .color-picker-box h2 {
+        .control-box h2 {
             font-size: 1.5em;
             margin: 0 0 10px 0;
         }
@@ -200,16 +202,109 @@
         #color-button:hover {
             background-color: #219653;
         }
+        
+        .legend-container {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 20px var(--shadow-color);
+            max-width: 250px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .legend-container h2 {
+            font-size: 1.8em;
+            text-align: center;
+            margin: 0 0 5px 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.1em;
+        }
+
+        .legend-color-box {
+            width: 25px;
+            height: 25px;
+            border-radius: 6px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .normal-food { background-color: #e74c3c; }
+        .gold-food { background-color: #FFD700; }
+        .special-food { background-color: #4d96ff; }
+        .rotten-food { background-color: #7f8c8d; }
+        .tiny-food { background-color: #ff69b4; }
+        .orange-food { background-color: #FFA500; }
+        .wall-tile { background-color: #1a1a1a; }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
     <div class="main-container">
-        <!-- Color Picker Box -->
-        <div id="color-picker-box" class="color-picker-box">
+        <!-- Controls Box -->
+        <div class="control-box">
             <h2>Snake Color</h2>
-            <p id="picker-message">Score 1 point to unlock!</p>
+            <p id="picker-message">Score 5 points to unlock!</p>
             <input type="color" id="colorPicker" value="#27ae60">
             <button id="color-button">Apply</button>
+            <div id="wall-toggle-container" class="control-box hidden">
+                <h2>Walls</h2>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="wallToggle">
+                    <span class="slider"></span>
+                </label>
+                <p id="wall-status">Walls: OFF</p>
+            </div>
         </div>
 
         <div class="game-container">
@@ -219,6 +314,39 @@
                 <span>High Score: <span id="high-score">0</span></span>
             </div>
             <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+        
+        <!-- Game Legend -->
+        <div class="legend-container">
+            <h2>Legend</h2>
+            <div class="legend-item">
+                <span class="legend-color-box normal-food"></span>
+                <p>Normal Fruit (+1)</p>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color-box special-food"></span>
+                <p>Special Fruit (+3)</p>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color-box rotten-food"></span>
+                <p>Rotten Fruit (-1)</p>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color-box wall-tile"></span>
+                <p>Wall</p>
+            </div>
+             <div class="legend-item">
+                <span class="legend-color-box tiny-food"></span>
+                <p>Tiny Fruit (+1, -1 Tile)</p>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color-box gold-food"></span>
+                <p>Gold Fruit (+5)</p>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color-box orange-food"></span>
+                <p>Orange Fruit (-5)</p>
+            </div>
         </div>
     </div>
 
@@ -240,20 +368,27 @@
         const pickerMessage = document.getElementById('picker-message');
         const colorPicker = document.getElementById('colorPicker');
         const colorButton = document.getElementById('color-button');
+        const wallToggleContainer = document.getElementById('wall-toggle-container');
+        const wallToggle = document.getElementById('wallToggle');
+        const wallStatus = document.getElementById('wall-status');
 
         const gridSize = 20;
         let snake = [{ x: 10, y: 15 }];
         let food = {};
         let direction = { x: 0, y: 0 };
         let score = 0;
+        let lastWallScore = 0;
+        let walls = [];
+        let wallsEnabled = false;
         let highScore = localStorage.getItem('snakeHighScore') || 0;
         let gameLoopId;
         let gameSpeed = 150;
         let snakeColor = '#27ae60';
         let isPaused = false;
+        let isGameOver = false;
         let lastUpdateTime = 0;
         let hasChosenColor = false;
-        let isSpecialFood = false;
+        let hasWallsUnlocked = false;
 
         highScoreSpan.textContent = highScore;
         colorPicker.disabled = true;
@@ -270,19 +405,81 @@
                 gameLoop();
             };
         }
-
-        function generateFood() {
-            isSpecialFood = Math.random() < 0.1; // 1 in 10 chance
-            food = {
+        
+        function getNewPosition() {
+            let newPos = {
                 x: Math.floor(Math.random() * (canvas.width / gridSize)),
                 y: Math.floor(Math.random() * (canvas.height / gridSize))
             };
-            // Ensure food does not spawn on the snake
-            for (const segment of snake) {
-                if (segment.x === food.x && segment.y === food.y) {
-                    generateFood();
-                    break;
+            
+            // Collect all occupied positions
+            const occupied = [...snake, food, ...walls].filter(p => p);
+
+            // Ensure new position is not on an occupied tile
+            for (const tile of occupied) {
+                if (tile.x === newPos.x && tile.y === newPos.y) {
+                    return getNewPosition(); // Recurse to find a new spot
                 }
+            }
+            return newPos;
+        }
+
+        function generateFood() {
+            const foodPosition = getNewPosition();
+            food = {
+                x: foodPosition.x,
+                y: foodPosition.y,
+                isGold: false,
+                isRotten: false,
+                isTiny: false,
+                isOrange: false,
+                isSpecial: false
+            };
+
+            const foodTypeRoll = Math.random();
+
+            if (score >= 30) {
+                // Gold (5%) and Orange (5%) can spawn.
+                if (foodTypeRoll < 0.05) {
+                    food.isGold = true;
+                } else if (foodTypeRoll < 0.10) {
+                    food.isOrange = true;
+                } else if (foodTypeRoll < 0.20) { // Tiny (10%)
+                    food.isTiny = true;
+                } else if (foodTypeRoll < 0.30) { // Special/Rotten (10%)
+                    if (Math.random() < 0.5) {
+                        food.isRotten = true;
+                    } else {
+                        food.isSpecial = true;
+                    }
+                }
+            } else if (score >= 15) {
+                // Tiny (10%), Special/Rotten (10%)
+                if (foodTypeRoll < 0.1) {
+                    food.isTiny = true;
+                } else if (foodTypeRoll < 0.2) {
+                     if (Math.random() < 0.5) {
+                        food.isRotten = true;
+                    } else {
+                        food.isSpecial = true;
+                    }
+                }
+            } else if (score >= 5) {
+                // Special/Rotten (10%)
+                if (foodTypeRoll < 0.1) {
+                     if (Math.random() < 0.5) {
+                        food.isRotten = true;
+                    } else {
+                        food.isSpecial = true;
+                    }
+                }
+            }
+        }
+        
+        function generateWall() {
+            if (wallsEnabled) {
+                 const wallPosition = getNewPosition();
+                 walls.push(wallPosition);
             }
         }
 
@@ -290,14 +487,35 @@
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Draw walls if enabled
+            if (wallsEnabled) {
+                 ctx.fillStyle = '#1a1a1a';
+                 walls.forEach(wall => {
+                     ctx.fillRect(wall.x * gridSize, wall.y * gridSize, gridSize, gridSize);
+                 });
+            }
+
             // Draw snake with the selected color
             ctx.fillStyle = snakeColor;
             snake.forEach(segment => {
                 ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
             });
 
-            // Draw food
-            ctx.fillStyle = isSpecialFood ? '#FFD700' : '#e74c3c';
+            // Draw primary food
+            if (food.isGold) {
+                ctx.fillStyle = '#FFD700';
+            } else if (food.isRotten) {
+                ctx.fillStyle = '#7f8c8d'; // Grey color for rotten fruit
+            } else if (food.isTiny) {
+                ctx.fillStyle = '#ff69b4'; // Pink for tiny fruit
+            } else if (food.isOrange) {
+                ctx.fillStyle = '#FFA500'; // Orange for orange fruit
+            } else if (food.isSpecial) {
+                ctx.fillStyle = '#4d96ff'; // A bright blue for special fruit
+            }
+            else {
+                ctx.fillStyle = '#e74c3c';
+            }
             ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
         }
 
@@ -319,30 +537,81 @@
                     return;
                 }
             }
+            
+            // Check for collision with walls if enabled
+            if (wallsEnabled) {
+                for (const wall of walls) {
+                    if (head.x === wall.x && head.y === wall.y) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
 
             snake.unshift(head);
+            let foodEaten = false;
 
+            // Check if snake eats the primary food
             if (head.x === food.x && head.y === food.y) {
-                if (isSpecialFood) {
+                if (food.isRotten) {
+                    score -= 1;
+                } else if (food.isGold) {
                     score += 5;
-                } else {
+                } else if (food.isTiny) {
+                    score += 1;
+                    // Remove the tail segment to shrink the snake
+                    if (snake.length > 1) {
+                        snake.pop(); 
+                    }
+                    if (snake.length > 1) {
+                         snake.pop();
+                    }
+                } else if (food.isOrange) {
+                    score -= 5;
+                } else if (food.isSpecial) {
+                    score += 3;
+                }
+                else {
                     score += 1;
                 }
                 scoreSpan.textContent = score;
                 generateFood();
+                foodEaten = true;
+            }
+            else {
+                snake.pop();
+            }
+            
+            // Generate a new wall every 5 points, but only if walls are enabled
+            if (score > 0 && score % 5 === 0 && score > lastWallScore && wallsEnabled) {
+                generateWall();
+                lastWallScore = score;
+            }
+
+            if (snake.length <= 0) {
+                gameOver();
+                return;
+            }
+
+            if (foodEaten) {
                 if (score % 5 === 0 && gameSpeed > 50) {
                     gameSpeed -= 10;
                 }
                 
-                if (score > 0 && !hasChosenColor) {
+                // Unlock color picker at 5 points
+                if (score >= 5 && !hasChosenColor) {
                     isPaused = true;
                     pickerMessage.textContent = 'Choose a new color!';
                     colorPicker.disabled = false;
                     colorButton.style.display = 'block';
                     hasChosenColor = true;
                 }
-            } else {
-                snake.pop();
+                
+                // Unlock walls at 5 points
+                if (score >= 5 && !hasWallsUnlocked) {
+                    wallToggleContainer.classList.remove('hidden');
+                    hasWallsUnlocked = true;
+                }
             }
 
             draw();
@@ -360,6 +629,7 @@
 
         function gameOver() {
             cancelAnimationFrame(gameLoopId);
+            isGameOver = true;
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('snakeHighScore', highScore);
@@ -371,10 +641,16 @@
         }
 
         function handleKeyPress(event) {
+            if (isGameOver) {
+                return; // Ignore all key presses if the game is over
+            }
+
             const key = event.key;
             if (isPaused) {
-                return;
+                // If the game is paused, a key press will unpause it and set the initial direction.
+                isPaused = false;
             }
+            
             switch (key) {
                 case 'ArrowUp':
                     if (direction.y === 0) direction = { x: 0, y: -1 };
@@ -389,9 +665,11 @@
                     if (direction.x === 0) direction = { x: 1, y: 0 };
                     break;
             }
+            
             if (direction.x === 0 && direction.y === 0) {
-                // Do nothing if direction is not set
+                // Do nothing if direction is not set, this happens only on the very first key press.
             } else if (!gameLoopId) {
+                // This starts the game loop only on the first key press after init.
                 gameLoop();
             }
         }
@@ -400,17 +678,26 @@
             snake = [{ x: 10, y: 15 }];
             direction = { x: 0, y: 0 };
             score = 0;
+            lastWallScore = 0;
+            walls = [];
+            wallsEnabled = false;
+            hasWallsUnlocked = false;
             scoreSpan.textContent = score;
             gameSpeed = 150;
             snakeColor = '#27ae60';
             generateFood();
             cancelAnimationFrame(gameLoopId);
             gameLoopId = null;
-            isPaused = false;
+            isPaused = true;
+            isGameOver = false;
             hasChosenColor = false;
-            pickerMessage.textContent = 'Score 1 point to unlock!';
+            pickerMessage.textContent = 'Score 5 points to unlock!';
             colorPicker.disabled = true;
             colorButton.style.display = 'none';
+            wallToggleContainer.classList.add('hidden');
+            wallToggle.checked = false;
+            wallStatus.textContent = 'Walls: OFF';
+            draw();
         }
 
         colorPicker.addEventListener('input', (e) => {
@@ -420,6 +707,22 @@
 
         colorButton.addEventListener('click', () => {
             isPaused = false;
+        });
+        
+        wallToggle.addEventListener('change', () => {
+            wallsEnabled = wallToggle.checked;
+            wallStatus.textContent = `Walls: ${wallsEnabled ? 'ON' : 'OFF'}`;
+            // Clear walls if they are being disabled
+            if (!wallsEnabled) {
+                walls = [];
+                draw();
+            } else {
+                 // Add the first wall when turned on
+                 if(walls.length === 0 && score >= 5) {
+                    generateWall();
+                    lastWallScore = score;
+                 }
+            }
         });
 
         document.addEventListener('keydown', handleKeyPress);
