@@ -1,0 +1,92 @@
+<h1>t1a08-in-out-cam.html</h1>
+
+<input type=text id="myText01" value="default"><br>
+
+<span id="mySpan01">
+...
+</span><br>
+
+<input type=button value="button" onclick="{
+	document.getElementById('mySpan01').textContent = document.getElementById('myText01').value
+}"><br><br>
+
+
+
+<script>
+	function myFunny01() {
+		let myNom01 = parseFloat(document.getElementById('myNum01').value);
+		let myNom02 = parseFloat(document.getElementById('myNum02').value);
+		let myNoum01 = myNom01 + myNom02;
+		document.getElementById('mySpan02').innerHTML = myNoum01;
+	}
+</script>
+
+<input type=number id="myNum01" value="1"><br>
+<input type=number id="myNum02" value="2"><br>
+
+<span id="mySpan02">
+...
+</span><br>
+
+<input type=button value="button" onclick="{myFunny01()}"><br><br>
+
+
+
+<script>
+	function myFunny02() {
+		let myNom03 = parseFloat(document.getElementById('myNum03').value);
+		let myNom04 = parseFloat(document.getElementById('myNum04').value);
+		let myNoum02 = myNom03 - myNom04;
+		document.getElementById('mySpan03').innerHTML = myNoum02;
+	}
+</script>
+
+<input type=number id="myNum03" value="1"><br>
+<input type=number id="myNum04" value="2"><br>
+
+<span id="mySpan03">
+...
+</span><br>
+
+<input type=button value="button" onclick="{myFunny02()}"><br><br>
+
+
+
+<script>
+	function myFunny03() {
+		let myNom05 = parseFloat(document.getElementById('myNum05').value);
+		let myNom06 = parseFloat(document.getElementById('myNum06').value);
+		let myNoum03 = myNom05 * myNom06;
+		document.getElementById('mySpan04').innerHTML = myNoum03;
+	}
+</script>
+
+<input type=number id="myNum05" value="1"><br>
+<input type=number id="myNum06" value="2"><br>
+
+<span id="mySpan04">
+...
+</span><br>
+
+<input type=button value="button" onclick="{myFunny03()}"><br><br>
+
+
+
+<script>
+	function myFunny04() {
+		let myNom07 = parseFloat(document.getElementById('myNum07').value);
+		let myNom08 = parseFloat(document.getElementById('myNum08').value);
+		let myNoum04 = myNom07 / myNom08;
+		document.getElementById('mySpan05').innerHTML = myNoum04;
+	}
+</script>
+
+<input type=number id="myNum07" value="1"><br>
+<input type=number id="myNum08" value="2"><br>
+
+<span id="mySpan05">
+...
+</span><br>
+
+<input type=button value="button" onclick="{myFunny04()}"><br><br>
+
