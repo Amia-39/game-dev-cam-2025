@@ -1,0 +1,22 @@
+<h1>t1a10-for-loops-cam.html</h1>
+
+<script>
+	function funkytion() {
+	let buh = ''
+	document.getElementById('lamb').innerHTML = ''
+		for (x=0;  x<10;  x++) {
+			if (x == 3) {
+				buh += x + ' is third <br>'
+			} else {
+				buh += x + ' not third <br>'
+			}
+		}
+
+	document.getElementById('lamb').innerHTML = buh
+}
+</script>
+
+
+<input type=button value="loop" onclick="{funkytion()}">
+
+<div id="lamb">...</div>
