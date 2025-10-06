@@ -1,0 +1,64 @@
+
+
+<!-- PLEASE GOD DONT JUDGE MY ID AND VARIABLE NAMES I DIDNT KNOW WHAT TO NAME THEM WITHOUT COPYING -->
+
+
+
+
+<h2 align=center>t1a09-variables-cam.html</h2>
+
+Show correct use of const, var, let and integer, character, boolean, float and string<br>
+
+<h2> adding strings</h2>
+
+<input id="Mizuki" type=text>
++
+<input id="BakenoHana" type=text>
+=
+<span id="Decorate">---</span>
+
+<input type=button value="bad at names" onclick="{
+	let myLower   = document.getElementById('Mizuki').value
+	var myIdsmile = document.getElementById('BakenoHana').value
+	const myKitty = document.getElementById('Decorate')
+	myKitty.innerHTML = myLower + ' ' + myIdsmile
+}"><hr>
+
+
+
+<h2> adding float point numbers</h2>
+
+<input id="Kanade" type=text>
++
+<input id="DNA" type=text>
+=
+<span id="Passionat25">---</span>
+
+<input type=button value="I can math now" onclick="{
+	let myKanadetosumura = document.getElementById('Kanade').value
+	var myTricologe		 = document.getElementById('DNA').value
+	let myOutOfNames 		 = parseFloat(myKanadetosumura) + parseFloat(myTricologe)
+	const myZamsa 		 = document.getElementById('Passionat25')
+	myZamsa.innerHTML = myKanadetosumura + ' + ' + myTricologe + ' = ' + myOutOfNames
+}"><hr>
+
+
+
+<h2> test for boolean</h2>
+
+<input id="empurple" type=text>
+
+<span id="SpaghettiVars">---</span><br>
+
+<input type=button value="idk" onclick="{
+	let empurple	= document.getElementById('empurple').value
+	const myIAmRain = document.getElementById('SpaghettiVars')
+	
+	if (empurple.toLowerCase() === 'true' || empurple.toLowerCase() === 'false') {
+		myJackpotSadGirl = 'yes'
+	} else {
+		myJackpotSadGirl = 'no'
+	}
+	
+	myIAmRain.innerHTML = 'Is ' + empurple + ' a boolean ? ' + myJackpotSadGirl
+}">
