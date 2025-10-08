@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slay the Spire-like Card Combat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg-dark: #1f2937; /* Gray-800 */
+            --color-primary: #f59e0b; /* Amber-500 */
+            --color-secondary: #10b981; /* Emerald-500 */
+            --color-danger: #ef4444; /* Red-500 */
+            --color-card-bg: #374151; /* Gray-700 */
+            --color-card-attack: #b91c1c; /* Red-700 */
+            --color-card-block: #1d4ed8; /* Blue-700 */
+            --color-card-utility: #6366f1; /* Indigo-500 */
+            --font-main: 'Inter', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--color-bg-dark);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 1200px;
+            min-height: 80vh;
+            background-color: #333;
+            border: 4px solid var(--color-primary);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .card {
+            width: 120px;
+            height: 180px;
+            background-color: var(--color-card-bg);
+            border-radius: 8px;
+            border: 3px solid #6b7280;
+            cursor: pointer;
+            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-cost {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 25px;
+            height: 25px;
+            line-height: 25px;
+            background-color: var(--color-primary);
+            color: var(--color-bg-dark);
+            border-radius: 50%;
+            font-weight: 900;
+            font-size: 0.875rem;
+            border: 2px solid white;
+        }
+
+        .card-type-bar {
+            width: 100%;
+            height: 5px;
+            border-radius: 2.5px;
+            margin-top: 0.25rem;
+        }
+
+        .type-attack { background-color: var(--color-card-attack); }
+        .type-block { background-color: var(--color-card-block); }
+        .type-utility { background-color: var(--color-card-utility); }
+
+        #hand-container {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            min-height: 200px;
+            padding: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .disabled-card {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .log-entry {
+            border-left: 3px solid var(--color-secondary);
+            padding-left: 0.5rem;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+        
+        .upgrade-button {
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            font-weight: 900;
+            font-size: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 200px;
+            height: 180px;
+            justify-content: center;
+        }
+
+        .upgrade-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .upgrade-button span {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Style for non-interactive cards in modals */
+        #deck-view-card-container .card,
+        #collection-view-card-container .card {
+            cursor: default;
+        }
+        
+        /* Enemy Choice Card Styling */
+        .enemy-choice-card {
+            transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .enemy-choice-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        }
+        
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Header: Stats and Action Buttons -->
+        <header class="flex justify-between items-center p-3 rounded-lg bg-gray-800 shadow-xl">
+            <h1 class="text-3xl font-black text-white uppercase tracking-wider">Ascension Trial</h1>
+            <div id="stats-area" class="flex gap-6 items-center">
+                <div class="text-center">
+                    <div id="current-energy" class="text-3xl font-extrabold text-yellow-400">3/3</div>
+                    <div class="text-sm text-gray-400">Energy</div>
+                </div>
+                <button id="end-turn-button" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full shadow-lg transition duration-150">
+                    End Turn
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Combat Area -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
+            <!-- Left Column: Player Status -->
+            <div id="player-status" class="bg-gray-700 p-4 rounded-lg shadow-inner flex flex-col items-center">
+                <h2 class="text-xl font-bold mb-3">You</h2>
+                <div class="w-full text-center mb-4">
+                    <div class="text-lg font-semibold text-green-400">HP: <span id="player-hp">80/80</span></div>
+                    <div id="player-block" class="text-sm bg-blue-500 rounded-full w-fit mx-auto px-3 mt-1" style="display: none;">
+                        Block: <span id="player-block-value">0</span>
+                    </div>
+                </div>
+                <div class="flex gap-4 text-sm font-medium">
+                    <div class="text-gray-300">Deck: <span id="deck-count">10</span></div>
+                    <div class="text-gray-300">Discard: <span id="discard-count">0</span></div>
+                </div>
+            </div>
+
+            <!-- Middle Column: Enemy Status & Log -->
+            <div class="lg:col-span-2 flex flex-col gap-4">
+                <!-- Enemy -->
+                <div id="enemy-area" class="bg-gray-700 p-6 rounded-lg shadow-inner flex flex-col sm:flex-row justify-between items-center">
+                    <div class="text-center mb-4 sm:mb-0">
+                        <h2 id="enemy-name" class="text-2xl font-black text-red-400">Enemy Name</h2>
+                        <div class="text-xl font-semibold text-red-500 mt-2">HP: <span id="enemy-hp">0/0</span></div>
+                    </div>
+                    
+                    <!-- Stage Counter -->
+                    <div id="stage-counter" class="text-center p-3 bg-gray-600 rounded-lg my-2 sm:my-0">
+                        <p class="text-sm text-gray-300">Stage:</p>
+                        <p id="current-stage-text" class="text-xl font-bold text-white">0/8</p>
+                    </div>
+                    
+                    <div id="enemy-intent" class="text-center p-3 bg-gray-600 rounded-lg">
+                        <p class="text-sm text-gray-300">Intent:</p>
+                        <p id="enemy-intent-text" class="text-lg font-bold text-yellow-300">Attack (8 Damage)</p>
+                    </div>
+                </div>
+
+                <!-- Combat Log -->
+                <div id="combat-log" class="bg-gray-800 p-3 rounded-lg h-32 overflow-y-auto text-white">
+                    <h3 class="text-md font-bold mb-1 border-b border-gray-600 pb-1">Combat Log</h3>
+                    <!-- Log entries will be added here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer: Hand Container -->
+        <footer class="bg-gray-800 p-2 rounded-lg shadow-2xl relative">
+            <h3 class="text-center text-lg font-bold mb-1 text-gray-300">Your Hand</h3>
+            <div id="hand-container">
+                <!-- Cards will be rendered here -->
+            </div>
+            
+            <!-- View Deck Button (Left) -->
+            <button id="view-deck-button" class="absolute left-4 top-1/2 -translate-y-1/2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold rounded-full transition duration-150 shadow-md">
+                View Deck (10)
+            </button>
+            
+            <!-- View Collection Button (Right) -->
+            <button id="view-collection-button" class="absolute right-4 top-1/2 -translate-y-1/2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-full transition duration-150 shadow-md">
+                View Collection
+            </button>
+        </footer>
+    </div>
+
+    <!-- Upgrade Panel Modal (Post-Combat Rewards) -->
+    <div id="upgrade-panel-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl text-center w-full max-w-4xl border-4 border-indigo-500">
+            <h2 class="text-4xl font-black mb-6 text-indigo-400 pb-2">Ascension Reward</h2>
+            
+            <div id="choice-buttons-container" class="flex justify-center gap-6 mb-8 flex-wrap">
+                <!-- Choice buttons (Heal, Card, Energy) will be rendered here -->
+            </div>
+
+            <!-- Card Selection Area (Hidden until 'New Card' is chosen) -->
+            <div id="card-selection-area" class="hidden flex flex-col items-center">
+                <p class="text-2xl font-semibold mb-6 text-yellow-300">Choose one card to add to your deck:</p>
+                <div id="card-choice-container" class="flex justify-center gap-6">
+                    <!-- Card choices will be rendered here -->
+                </div>
+                <button id="skip-card-button" class="mt-8 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded-full transition duration-150 text-lg">
+                    Skip Selection (Continue)
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enemy Choice Modal -->
+    <div id="enemy-choice-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl text-center w-full max-w-4xl border-4 border-red-500">
+            <!-- Title is dynamically set in JS based on stage -->
+            <h2 class="text-4xl font-black mb-6 text-red-400 pb-2">Choose Your Path</h2>
+            <p class="text-xl text-gray-300 mb-8">Select the next enemy you wish to challenge:</p>
+            <div id="enemy-choice-container" class="flex justify-center gap-10">
+                <!-- Enemy choice cards will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Deck View Modal (Draw Pile) -->
+    <div id="deck-view-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col border-4 border-gray-600">
+            <h2 class="text-3xl font-black mb-4 text-gray-300">Cards Remaining in Deck (<span id="deck-view-count">0</span>)</h2>
+            <div id="deck-view-card-container" class="flex flex-wrap gap-4 overflow-y-auto p-2 bg-gray-700 rounded-lg flex-grow">
+                <!-- Deck cards will be rendered here -->
+            </div>
+            <button id="close-deck-view-button" class="mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full transition duration-150">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Collection View Modal (All Possible Cards) -->
+    <div id="collection-view-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col border-4 border-indigo-500">
+            <h2 class="text-3xl font-black mb-4 text-indigo-400">Complete Card Collection</h2>
+            <div id="collection-view-card-container" class="flex flex-wrap gap-4 overflow-y-auto p-2 bg-gray-700 rounded-lg flex-grow">
+                <!-- All card definitions will be rendered here -->
+            </div>
+            <button id="close-collection-view-button" class="mt-4 px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full transition duration-150">
+                Close
+            </button>
+        </div>
+    </div>
+
+
+    <!-- Modal for Game Over/Win (Existing) -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-700 p-8 rounded-lg shadow-2xl text-center w-80">
+            <h2 id="modal-title" class="text-3xl font-black mb-4 text-red-500">You Died!</h2>
+            <p id="modal-message" class="text-lg mb-6">The Slime Boss was too strong...</p>
+            <button id="restart-button" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-full transition duration-150">
+                Restart Game
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- STAGE CONFIGURATION (Imported from stages_config.js) ---
+        const STAGE_CONFIG = [
+            // --- Low Difficulty (Stages 1-3) ---
+            { id: 1, name: "The Grassy Fields", difficulty: "low", isBoss: false, enemyType: "Goblins" },
+            { id: 2, name: "The Shady Woods", difficulty: "low", isBoss: false, enemyType: "Bugs" },
+            { id: 3, name: "The Forgotten Path", difficulty: "low", isBoss: false, enemyType: "Skeletons" },
+
+            // --- Medium Difficulty (Stages 4-5) ---
+            { id: 4, name: "The Dusty Catacombs", difficulty: "medium", isBoss: false, enemyType: "Ghosts" },
+            { id: 5, name: "The Scorched Trail", difficulty: "medium", isBoss: false, enemyType: "Fire Imps" },
+
+            // --- High Difficulty (Stages 6-7) ---
+            { id: 6, name: "The Crystal Peaks", difficulty: "high", isBoss: false, enemyType: "Golems" },
+            { id: 7, name: "The Shadow Corridor", difficulty: "high", isBoss: false, enemyType: "Dark Knights" },
+
+            // --- Boss Stage (Stage 8) ---
+            { id: 8, name: "The Slime King's Chamber", difficulty: "boss", isBoss: true, enemyType: "Slime Boss" },
+        ];
+        
+        // --- Enemy Definitions (Categorized by difficulty) ---
+        const ENEMY_POOLS = {
+            'low': [
+                // Low HP, low to medium damage
+                { name: 'Weak Slime', maxHp: 30, currentHp: 30, baseDamage: 4, intent: 'Attack' },
+                { name: 'Frail Cultist', maxHp: 40, currentHp: 40, baseDamage: 6, intent: 'Attack' },
+                { name: 'Swift Bat', maxHp: 25, currentHp: 25, baseDamage: 9, intent: 'Attack' }, // High damage, very low HP
+            ],
+            'medium': [
+                // Balanced stats
+                { name: 'Angry Goblin', maxHp: 50, currentHp: 50, baseDamage: 8, intent: 'Attack' },
+                { name: 'Vicious Wolf', maxHp: 60, currentHp: 60, baseDamage: 7, intent: 'Attack' },
+                { name: 'Armored Guard', maxHp: 55, currentHp: 55, baseDamage: 5, intent: 'Attack' }, // Lower damage, higher HP
+            ],
+            'high': [
+                // High stats or specialized threat
+                { name: 'Stone Golem', maxHp: 70, currentHp: 70, baseDamage: 6, intent: 'Attack' },
+                { name: 'Shadow Walker', maxHp: 45, currentHp: 45, baseDamage: 10, intent: 'Attack' }, // High damage, low HP (glass cannon)
+            ],
+            'boss': [
+                // Final Boss
+                { name: 'Slime Boss', maxHp: 120, currentHp: 120, baseDamage: 12, intent: 'Attack' },
+            ]
+        };
+
+
+        // --- Card Definitions ---
+        const CARD_DEFINITIONS = {
+            'strike': {
+                name: 'Strike',
+                cost: 1,
+                type: 'attack',
+                description: 'Deal 6 damage.',
+                effect: (game) => {
+                    game.addLog('You play Strike, dealing 6 damage!');
+                    game.takeDamage(game.state.enemy, 6);
+                }
+            },
+            'defend': {
+                name: 'Defend',
+                cost: 1,
+                type: 'block',
+                description: 'Gain 5 Block.',
+                effect: (game) => {
+                    game.addLog('You play Defend, gaining 5 Block.');
+                    game.state.player.block += 5;
+                }
+            },
+            'energy_potion': {
+                name: 'Energy Potion',
+                cost: 0,
+                type: 'utility',
+                description: 'Gain 1 Energy this turn.',
+                effect: (game) => {
+                    game.addLog('You use Energy Potion, gaining 1 Energy.');
+                    game.state.player.currentEnergy += 1;
+                }
+            },
+            'slash': {
+                name: 'Slash',
+                cost: 1, 
+                type: 'attack',
+                description: 'Deal 10 damage.',
+                effect: (game) => {
+                    game.addLog('You play Slash, dealing 10 damage!');
+                    game.takeDamage(game.state.enemy, 10);
+                }
+            },
+            'iron_skin': {
+                name: 'Iron Skin',
+                cost: 2,
+                type: 'block',
+                description: 'Gain 12 Block.', 
+                effect: (game) => {
+                    game.addLog('You play Iron Skin, gaining 12 Block.');
+                    game.state.player.block += 12;
+                }
+            },
+            'fireball': {
+                name: 'Fireball',
+                cost: 2,
+                type: 'attack',
+                description: 'Deal 14 damage.', 
+                effect: (game) => {
+                    game.addLog('You throw a Fireball, dealing 14 damage!');
+                    game.takeDamage(game.state.enemy, 14);
+                }
+            },
+            'fortify': {
+                name: 'Fortify',
+                cost: 1,
+                type: 'block',
+                description: 'Gain 8 Block.',
+                effect: (game) => {
+                    game.addLog('You Fortify your defenses, gaining 8 Block.');
+                    game.state.player.block += 8;
+                }
+            }
+        };
+
+        // Cards available for selection in the New Card upgrade option
+        const CARD_CHOICE_POOL = [ 'slash', 'iron_skin', 'fireball', 'fortify' ];
+
+
+        // --- Game State Variables ---
+        const gameState = {
+            player: {
+                maxHp: 80,
+                currentHp: 80,
+                block: 0,
+                maxEnergy: 3,
+                currentEnergy: 3,
+            },
+            enemy: {}, 
+            deck: [],
+            hand: [],
+            discard: [],
+            currentStage: 0,
+            targetVictories: 8, // Fixed target based on STAGE_CONFIG length
+        };
+
+        // --- DOM Elements ---
+        const elements = {
+            handContainer: document.getElementById('hand-container'),
+            playerHp: document.getElementById('player-hp'),
+            playerBlock: document.getElementById('player-block'),
+            playerBlockValue: document.getElementById('player-block-value'),
+            enemyHp: document.getElementById('enemy-hp'),
+            enemyName: document.getElementById('enemy-name'),
+            currentEnergy: document.getElementById('current-energy'),
+            deckCount: document.getElementById('deck-count'),
+            discardCount: document.getElementById('discard-count'),
+            combatLog: document.getElementById('combat-log'),
+            endTurnButton: document.getElementById('end-turn-button'),
+            gameOverModal: document.getElementById('game-over-modal'),
+            modalTitle: document.getElementById('modal-title'),
+            modalMessage: document.getElementById('modal-message'),
+            restartButton: document.getElementById('restart-button'),
+            currentStageText: document.getElementById('current-stage-text'),
+            enemyIntentText: document.getElementById('enemy-intent-text'),
+            
+            // Upgrade Panel elements
+            upgradePanelModal: document.getElementById('upgrade-panel-modal'),
+            choiceButtonsContainer: document.getElementById('choice-buttons-container'),
+            cardSelectionArea: document.getElementById('card-selection-area'),
+            cardChoiceContainer: document.getElementById('card-choice-container'),
+            skipCardButton: document.getElementById('skip-card-button'),
+
+            // NEW: Enemy Choice elements
+            enemyChoiceModal: document.getElementById('enemy-choice-modal'),
+            enemyChoiceContainer: document.getElementById('enemy-choice-container'),
+            enemyChoiceModalTitle: document.querySelector('#enemy-choice-modal h2'),
+
+            // Deck View elements
+            viewDeckButton: document.getElementById('view-deck-button'),
+            deckViewModal: document.getElementById('deck-view-modal'),
+            deckViewCount: document.getElementById('deck-view-count'),
+            deckViewCardContainer: document.getElementById('deck-view-card-container'),
+            closeDeckViewButton: document.getElementById('close-deck-view-button'),
+            
+            // Collection View elements
+            viewCollectionButton: document.getElementById('view-collection-button'),
+            collectionViewModal: document.getElementById('collection-view-modal'),
+            collectionViewCardContainer: document.getElementById('collection-view-card-container'),
+            closeCollectionViewButton: document.getElementById('close-collection-view-button'),
+        };
+
+        // --- Core Game Manager ---
+        const Game = {
+            state: gameState,
+
+            // Utility to add messages to the combat log
+            addLog(message, isImportant = false) {
+                const logEntry = document.createElement('p');
+                logEntry.className = 'log-entry ' + (isImportant ? 'font-bold text-yellow-300' : 'text-gray-200');
+                logEntry.textContent = `[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}] ${message}`;
+                elements.combatLog.prepend(logEntry); // Add to top
+                elements.combatLog.scrollTop = 0; // Scroll to top
+            },
+
+            // Utility to shuffle an array (Fisher-Yates)
+            shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            },
+
+            // Initial setup of the deck
+            initializeDeck() {
+                const initialDeck = [
+                    'strike', 'strike', 'strike', 'strike', 'strike',
+                    'defend', 'defend', 'defend', 'defend', 'defend',
+                    'energy_potion'
+                ];
+                this.state.deck = initialDeck.map(id => CARD_DEFINITIONS[id]);
+                this.shuffle(this.state.deck);
+                this.addLog("Deck initialized and shuffled.", true);
+            },
+
+            // Draw a card from the deck to the hand
+            drawCard() {
+                if (this.state.deck.length === 0) {
+                    if (this.state.discard.length === 0) {
+                        this.addLog("No cards left to draw. (Run out of cards!)", true);
+                        return;
+                    }
+                    this.state.deck = this.state.discard;
+                    this.state.discard = [];
+                    this.shuffle(this.state.deck);
+                    this.addLog("Deck reshuffled from discard pile.", true);
+                }
+
+                if (this.state.deck.length > 0) {
+                    const card = this.state.deck.pop();
+                    this.state.hand.push(card);
+                    this.addLog(`Drew: ${card.name}`);
+                }
+            },
+
+            // Renders the card UI element for hand/choice/deck/collection display
+            createCardElement(card, index, mode = 'hand') { // mode: 'hand', 'choice', 'deck', 'collection'
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card';
+                cardEl.dataset.index = index;
+                cardEl.dataset.cost = card.cost;
+                cardEl.dataset.type = card.type;
+
+                if (mode === 'hand') {
+                    // Hand card logic
+                    cardEl.classList.add('hover:scale-105', 'transition-transform');
+                    if (card.cost > this.state.player.currentEnergy) {
+                        cardEl.classList.add('disabled-card');
+                    }
+                    cardEl.addEventListener('click', () => this.playCard(index));
+                } else if (mode === 'choice') {
+                    // Card choice logic (Upgrade Panel)
+                    cardEl.classList.add('hover:scale-105', 'transition-transform', 'w-[140px]', 'h-[200px]');
+                    cardEl.addEventListener('click', () => this.selectNewCard(card.name));
+                } else if (mode === 'deck' || mode === 'collection') {
+                    // Deck or Collection view logic - non-interactive
+                    cardEl.classList.add('w-[140px]', 'h-[200px]', 'cursor-default', 'shadow-lg');
+                }
+                
+                cardEl.innerHTML = `
+                    <div class="card-cost">${card.cost}</div>
+                    <div class="text-lg font-bold mt-2">${card.name}</div>
+                    <div class="flex-grow flex items-center justify-center text-4xl">
+                        ${card.type === 'attack' ? '⚔️' : (card.type === 'block' ? '🛡️' : '✨')}
+                    </div>
+                    <p class="text-xs text-gray-300 px-1 mb-1">${card.description}</p>
+                    <div class="card-type-bar type-${card.type}"></div>
+                `;
+                return cardEl;
+            },
+
+            // Render all cards in hand
+            renderHand() {
+                elements.handContainer.innerHTML = '';
+                this.state.hand.forEach((card, index) => {
+                    elements.handContainer.appendChild(this.createCardElement(card, index, 'hand'));
+                });
+            },
+
+            // Update all UI elements (stats, counts)
+            updateUI() {
+                const player = this.state.player;
+                const enemy = this.state.enemy;
+
+                elements.playerHp.textContent = `${player.currentHp}/${player.maxHp}`;
+                elements.currentEnergy.textContent = `${player.currentEnergy}/${player.maxEnergy}`;
+                
+                // Deck and Discard counts
+                // NOTE: We show the total number of cards in the run for "Deck" display
+                elements.deckCount.textContent = (this.state.deck.length + this.state.hand.length + this.state.discard.length);
+                elements.discardCount.textContent = this.state.discard.length;
+                
+                // Update View Deck button text (shows current draw pile size)
+                if(elements.viewDeckButton) {
+                    elements.viewDeckButton.textContent = `View Deck (${this.state.deck.length})`;
+                }
+
+                // Stage UI
+                elements.currentStageText.textContent = `${this.state.currentStage}/${this.state.targetVictories}`;
+
+                // Enemy UI
+                elements.enemyName.textContent = enemy.name || 'Awaiting Opponent';
+                elements.enemyHp.textContent = `${enemy.currentHp}/${enemy.maxHp}`;
+                elements.enemyIntentText.textContent = `${enemy.intent} (${enemy.baseDamage} Damage)`;
+
+
+                if (player.block > 0) {
+                    elements.playerBlock.style.display = 'block';
+                    elements.playerBlockValue.textContent = player.block;
+                } else {
+                    elements.playerBlock.style.display = 'none';
+                    elements.playerBlockValue.textContent = '0';
+                }
+
+                this.renderHand();
+            },
+
+            // Game over logic (Loss or Win)
+            endGame(isWin) {
+                if (isWin) {
+                    this.addLog("**You completed all stages!**", true);
+                    elements.modalTitle.textContent = "Absolute Victory!";
+                    elements.modalTitle.classList.remove('text-red-500');
+                    elements.modalTitle.classList.add('text-green-500');
+                    elements.modalMessage.textContent = `You defeated ${this.state.targetVictories} enemies and completed the Ascension Trial!`;
+                } else {
+                    this.addLog("Player defeated!", true);
+                    elements.modalTitle.textContent = "Defeat!";
+                    elements.modalTitle.classList.remove('text-green-500');
+                    elements.modalTitle.classList.add('text-red-500');
+                    elements.modalMessage.textContent = "You were overcome by the monsters. Better luck on your next run!";
+                }
+                elements.gameOverModal.classList.remove('hidden');
+            },
+
+            // Main game over check (called after any change in HP)
+            checkGameOver() {
+                // Condition 1: Player HP reaches 0 (Loss)
+                if (this.state.player.currentHp <= 0) {
+                    this.endGame(false);
+                    return true;
+                }
+
+                // Condition 2: Current Enemy HP reaches 0 (Stage Win)
+                if (this.state.enemy.currentHp <= 0) {
+                    this.addLog(`${this.state.enemy.name} defeated!`, true);
+                    this.startNextStage(); // Will check for victory and then show upgrade/choice
+                    return true;
+                }
+                
+                return false;
+            },
+
+            // Apply damage to a target (player or enemy)
+            takeDamage(target, damage) {
+                if (target === this.state.player) {
+                    let actualDamage = damage;
+                    if (this.state.player.block > 0) {
+                        const blockApplied = Math.min(this.state.player.block, damage);
+                        this.state.player.block -= blockApplied;
+                        actualDamage = damage - blockApplied;
+                    }
+                    this.state.player.currentHp -= actualDamage;
+                    this.addLog(`You take ${actualDamage} damage (Blocked ${damage - actualDamage}).`);
+                } else if (target === this.state.enemy) {
+                    target.currentHp -= damage;
+                    this.addLog(`${target.name} takes ${damage} damage.`);
+                }
+
+                if (target.currentHp < 0) {
+                    target.currentHp = 0;
+                }
+
+                this.updateUI();
+                this.checkGameOver();
+            },
+
+            // Player actions
+            playCard(handIndex) {
+                if (this.checkGameOver()) return;
+
+                const card = this.state.hand[handIndex];
+                if (card.cost > this.state.player.currentEnergy) {
+                    this.addLog(`Cannot play ${card.name}: Not enough energy (${card.cost} needed).`);
+                    return;
+                }
+
+                // 1. Pay Cost
+                this.state.player.currentEnergy -= card.cost;
+
+                // 2. Perform Effect
+                card.effect(this);
+
+                // 3. Move card from hand to discard
+                this.state.hand.splice(handIndex, 1);
+                this.state.discard.push(card);
+
+                this.updateUI();
+            },
+
+            // Enemy turn logic
+            enemyTurn() {
+                this.addLog("--- Enemy Turn Start ---", true);
+                if (this.checkGameOver()) return;
+
+                const damage = this.state.enemy.baseDamage;
+                this.takeDamage(this.state.player, damage);
+
+                this.addLog(`${this.state.enemy.name} attacks for ${damage} damage.`);
+                this.addLog("--- Enemy Turn End ---", true);
+                
+                if (this.checkGameOver()) return;
+
+                setTimeout(() => this.startTurn(), 1000); 
+            },
+
+            // Player turn setup
+            startTurn() {
+                if (this.checkGameOver()) return;
+
+                this.addLog(`--- Your Turn Start (Stage ${this.state.currentStage}/${this.state.targetVictories}) ---`, true);
+                
+                // 1. Reset Energy
+                this.state.player.currentEnergy = this.state.player.maxEnergy;
+
+                // 2. Clear Block
+                this.state.player.block = 0;
+
+                // 3. Discard entire hand
+                if (this.state.hand.length > 0) {
+                    this.addLog(`Discarding ${this.state.hand.length} cards.`);
+                    this.state.discard.push(...this.state.hand);
+                    this.state.hand = [];
+                }
+
+                // 4. Draw 5 new cards
+                for (let i = 0; i < 5; i++) {
+                    this.drawCard();
+                }
+
+                // 5. Update UI
+                this.updateUI();
+            },
+
+            // --- Progression Flow (After Defeating an Enemy) ---
+            
+            startNextStage() {
+                // Check if the current stage was the last stage
+                if (this.state.currentStage >= this.state.targetVictories) {
+                    this.endGame(true);
+                    return;
+                }
+                
+                // Open Upgrade Panel (Heal, Card, Energy)
+                this.openUpgradePanel();
+            },
+            
+            // --- Upgrade Panel Functions ---
+
+            // 1. Fully Heal
+            applyHeal() {
+                this.state.player.currentHp = this.state.player.maxHp;
+                this.addLog(`Choice made: Fully Healed to ${this.state.player.maxHp} HP.`, true);
+                this.closeUpgradePanel();
+            },
+
+            // 2. Show Card Choices
+            showCardChoices() {
+                elements.choiceButtonsContainer.classList.add('hidden');
+                elements.cardSelectionArea.classList.remove('hidden');
+                elements.cardChoiceContainer.innerHTML = '';
+                
+                // Get two unique random cards
+                let availableCards = [...CARD_CHOICE_POOL];
+                this.shuffle(availableCards);
+                
+                const card1Data = CARD_DEFINITIONS[availableCards.pop()];
+                // Use choice 1 again if there's only one card left in the pool
+                const card2Id = availableCards.length > 0 ? availableCards.pop() : Object.keys(CARD_DEFINITIONS).find(key => CARD_DEFINITIONS[key].name === card1Data.name);
+                const card2Data = CARD_DEFINITIONS[card2Id];
+
+                // Note the 'choice' mode for non-interactive selection cards
+                elements.cardChoiceContainer.appendChild(this.createCardElement(card1Data, 0, 'choice'));
+                elements.cardChoiceContainer.appendChild(this.createCardElement(card2Data, 1, 'choice'));
+            },
+
+            // Handle selection of a card choice
+            selectNewCard(cardName) {
+                const cardId = Object.keys(CARD_DEFINITIONS).find(key => CARD_DEFINITIONS[key].name === cardName);
+                if (cardId) {
+                    this.state.deck.push(CARD_DEFINITIONS[cardId]);
+                    this.addLog(`Choice made: Added new card, ${cardName}, to your deck!`, true);
+                    this.closeUpgradePanel();
+                }
+            },
+
+            // 3. Max Energy Increase
+            applyMaxEnergy() {
+                this.state.player.maxEnergy += 1;
+                this.state.player.currentEnergy = this.state.player.maxEnergy; // Reset current energy too
+                this.addLog(`RARE CHOICE: Permanent Energy increased to ${this.state.player.maxEnergy}!`, true);
+                this.closeUpgradePanel();
+            },
+
+            // Open the upgrade panel
+            openUpgradePanel() {
+                elements.choiceButtonsContainer.innerHTML = '';
+                elements.cardSelectionArea.classList.add('hidden');
+
+                // Always available choices
+                const choices = [
+                    { 
+                        name: 'Fully Heal', 
+                        icon: '💚', 
+                        color: 'bg-green-600 hover:bg-green-700', 
+                        action: () => this.applyHeal() 
+                    },
+                    { 
+                        name: 'New Card', 
+                        icon: '🃏', 
+                        color: 'bg-indigo-600 hover:bg-indigo-700', 
+                        action: () => this.showCardChoices() 
+                    }
+                ];
+
+                // RARE OPTION: 20% chance to get Max Energy increase
+                if (Math.random() < 0.20) { 
+                    choices.push({
+                        name: 'Max Energy +1',
+                        icon: '⚡',
+                        color: 'bg-yellow-600 hover:bg-yellow-700 border-4 border-yellow-300', // Highlight rare choice
+                        action: () => this.applyMaxEnergy()
+                    });
+                    this.addLog("A rare Max Energy upgrade option appeared!", true);
+                }
+
+                choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.className = `upgrade-button ${choice.color} text-white`;
+                    button.innerHTML = `<span>${choice.icon}</span>${choice.name}`;
+                    button.addEventListener('click', choice.action);
+                    elements.choiceButtonsContainer.appendChild(button);
+                });
+
+                elements.choiceButtonsContainer.classList.remove('hidden');
+                elements.upgradePanelModal.classList.remove('hidden');
+                this.updateUI();
+            },
+
+            // Close the upgrade panel and proceed to enemy choice
+            closeUpgradePanel() {
+                elements.upgradePanelModal.classList.add('hidden');
+                // Increment the stage counter *before* showing the next enemy choice
+                this.state.currentStage += 1; 
+                if (this.state.currentStage > this.state.targetVictories) {
+                     this.endGame(true); // Should already be caught in startNextStage, but good safety check
+                } else {
+                    this.showEnemyChoice(); 
+                }
+            },
+            
+            // --- Enemy Choice Functions ---
+
+            // Helper to create the enemy choice card UI
+            createEnemyChoiceCard(enemyDefinition) {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'enemy-choice-card bg-gray-700 p-6 rounded-lg shadow-xl cursor-pointer hover:bg-gray-600 transition duration-150 w-64 border-t-8 border-red-500';
+                cardEl.innerHTML = `
+                    <h3 class="text-2xl font-bold mb-3 text-red-400">${enemyDefinition.name}</h3>
+                    <p class="text-lg mb-1">HP: <span class="font-bold text-green-400">${enemyDefinition.maxHp}</span></p>
+                    <p class="text-lg">Attack: <span class="font-bold text-yellow-300">${enemyDefinition.baseDamage}</span></p>
+                    <p class="mt-4 text-sm text-gray-400 italic">Difficulty: ${enemyDefinition.maxHp > 100 ? 'Boss' : (enemyDefinition.maxHp > 60 ? 'High' : (enemyDefinition.maxHp > 45 ? 'Medium' : 'Low'))}</p>
+                `;
+                // Clone the object so we can reset its HP later
+                cardEl.addEventListener('click', () => this.selectEnemy(JSON.parse(JSON.stringify(enemyDefinition))));
+                return cardEl;
+            },
+            
+            // Show the modal displaying two random enemies based on stage difficulty
+            showEnemyChoice() {
+                // Ensure the stage number is valid
+                if (this.state.currentStage > this.state.targetVictories) return; 
+
+                const currentStageData = STAGE_CONFIG.find(s => s.id === this.state.currentStage);
+                const difficulty = currentStageData.difficulty;
+                const isBossStage = currentStageData.isBoss;
+
+                elements.enemyChoiceModal.classList.remove('hidden');
+                elements.enemyChoiceContainer.innerHTML = '';
+                
+                // Update modal header based on stage name
+                elements.enemyChoiceModalTitle.textContent = `Stage ${this.state.currentStage}: ${currentStageData.name}`;
+
+                let choicePool = [];
+
+                if (isBossStage) {
+                    // Stage 8: Always the Boss
+                    choicePool = ENEMY_POOLS['boss'];
+                    
+                    // Add the single boss choice
+                    elements.enemyChoiceContainer.appendChild(this.createEnemyChoiceCard(choicePool[0]));
+                    this.addLog(`You have reached the final stage: ${currentStageData.name}! Prepare for the boss!`, true);
+
+                } else {
+                    // Normal Stages: Pick 2 random enemies from the correct difficulty pool
+                    const availableEnemies = [...ENEMY_POOLS[difficulty]];
+                    this.shuffle(availableEnemies);
+
+                    const choice1 = availableEnemies.pop();
+                    const choice2 = availableEnemies.length > 0 ? availableEnemies.pop() : JSON.parse(JSON.stringify(choice1)); 
+
+                    elements.enemyChoiceContainer.appendChild(this.createEnemyChoiceCard(choice1));
+                    elements.enemyChoiceContainer.appendChild(this.createEnemyChoiceCard(choice2));
+                }
+            },
+            
+            // Handle selection of a new enemy
+            selectEnemy(enemyDefinition) {
+                elements.enemyChoiceModal.classList.add('hidden');
+                
+                // Set the chosen enemy as the current enemy
+                this.state.enemy = enemyDefinition;
+                this.addLog(`**Path chosen: Challenging ${this.state.enemy.name}**`, true);
+
+                // Start the combat turn
+                this.startTurn();
+            },
+
+            // --- Deck View Functions (Draw Pile) ---
+            
+            // Show the modal displaying all cards in the deck
+            showDeckView() {
+                elements.deckViewCardContainer.innerHTML = '';
+                
+                // Render all cards currently in the draw pile (deck)
+                this.state.deck.forEach((card, index) => {
+                    elements.deckViewCardContainer.appendChild(this.createCardElement(card, index, 'deck'));
+                });
+
+                elements.deckViewCount.textContent = this.state.deck.length;
+                elements.deckViewModal.classList.remove('hidden');
+            },
+
+            // Hide the deck view modal
+            hideDeckView() {
+                elements.deckViewModal.classList.add('hidden');
+            },
+
+            // --- Collection View Functions (All Possible Cards) ---
+            
+            // Show the modal displaying all known cards
+            showCollectionView() {
+                elements.collectionViewCardContainer.innerHTML = '';
+                
+                // Iterate through all defined cards
+                Object.values(CARD_DEFINITIONS).forEach((card, index) => {
+                    // Use 'collection' mode for non-interactive display
+                    elements.collectionViewCardContainer.appendChild(this.createCardElement(card, index, 'collection'));
+                });
+
+                elements.collectionViewModal.classList.remove('hidden');
+            },
+
+            // Hide the collection view modal
+            hideCollectionView() {
+                elements.collectionViewModal.classList.add('hidden');
+            },
+            
+            // --- End Turn/Init Functions ---
+
+            // End turn handler
+            endTurn() {
+                if (this.checkGameOver()) return;
+                this.enemyTurn();
+            },
+
+            // Initialize the entire game
+            init() {
+                // Attach Event Listeners
+                elements.endTurnButton.addEventListener('click', () => this.endTurn());
+                elements.restartButton.addEventListener('click', () => this.resetGame());
+                elements.skipCardButton.addEventListener('click', () => this.closeUpgradePanel()); 
+
+                // Deck View Listeners
+                elements.viewDeckButton.addEventListener('click', () => this.showDeckView());
+                elements.closeDeckViewButton.addEventListener('click', () => this.hideDeckView());
+                
+                // Collection View Listeners
+                elements.viewCollectionButton.addEventListener('click', () => this.showCollectionView());
+                elements.closeCollectionViewButton.addEventListener('click', () => this.hideCollectionView());
+
+                this.resetGame();
+            },
+
+            // Reset game state
+            resetGame() {
+                // Reset state to initial values
+                this.state.player.maxHp = 80;
+                this.state.player.currentHp = 80;
+                this.state.player.block = 0;
+                this.state.player.maxEnergy = 3;
+                this.state.player.currentEnergy = 3;
+                this.state.currentStage = 1; // Start at stage 1 immediately
+                this.state.targetVictories = STAGE_CONFIG.length; // Max stages is determined by config length
+
+                this.state.deck = [];
+                this.state.hand = [];
+                this.state.discard = [];
+
+                elements.combatLog.innerHTML = `<h3 class="text-md font-bold mb-1 border-b border-gray-600 pb-1">Combat Log</h3>`;
+
+                this.initializeDeck();
+                
+                // Start by showing the enemy choice for Stage 1
+                this.showEnemyChoice();
+
+                elements.gameOverModal.classList.add('hidden');
+                elements.upgradePanelModal.classList.add('hidden'); // Ensure panel is hidden
+                elements.deckViewModal.classList.add('hidden'); // Ensure deck view is hidden
+                elements.collectionViewModal.classList.add('hidden'); // Ensure new collection view is hidden
+                this.addLog("Game Initialized. Select your first opponent to begin the run!", true);
+                this.updateUI();
+            }
+        };
+
+        // Start the game on window load
+        window.onload = () => {
+            Game.init();
+        };
+
+    </script>
+</body>
+</html>
