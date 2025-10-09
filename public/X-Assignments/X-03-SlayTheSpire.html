@@ -198,6 +198,10 @@
                     <div class="text-center mb-4 sm:mb-0">
                         <h2 id="enemy-name" class="text-2xl font-black text-red-400">Enemy Name</h2>
                         <div class="text-xl font-semibold text-red-500 mt-2">HP: <span id="enemy-hp">0/0</span></div>
+                        <!-- New: Vulnerable Status Display -->
+                        <div id="enemy-vulnerable" class="text-sm bg-yellow-600 rounded-full w-fit mx-auto px-3 mt-1" style="display: none;">
+                            Vulnerable: <span id="enemy-vulnerable-value">0</span>
+                        </div>
                     </div>
                     
                     <!-- Stage Counter -->
@@ -313,7 +317,7 @@
 
 
     <script>
-        // --- STAGE CONFIGURATION (Imported from stages_config.js) ---
+        // --- STAGE CONFIGURATION ---
         const STAGE_CONFIG = [
             // --- Low Difficulty (Stages 1-3) ---
             { id: 1, name: "The Grassy Fields", difficulty: "low", isBoss: false, enemyType: "Goblins" },
@@ -336,24 +340,24 @@
         const ENEMY_POOLS = {
             'low': [
                 // Low HP, low to medium damage
-                { name: 'Weak Slime', maxHp: 30, currentHp: 30, baseDamage: 4, intent: 'Attack' },
-                { name: 'Frail Cultist', maxHp: 40, currentHp: 40, baseDamage: 6, intent: 'Attack' },
-                { name: 'Swift Bat', maxHp: 25, currentHp: 25, baseDamage: 9, intent: 'Attack' }, // High damage, very low HP
+                { name: 'Weak Slime', maxHp: 30, currentHp: 30, baseDamage: 4, intent: 'Attack', vulnerable: 0 },
+                { name: 'Frail Cultist', maxHp: 40, currentHp: 40, baseDamage: 6, intent: 'Attack', vulnerable: 0 },
+                { name: 'Swift Bat', maxHp: 25, currentHp: 25, baseDamage: 9, intent: 'Attack', vulnerable: 0 }, // High damage, very low HP
             ],
             'medium': [
                 // Balanced stats
-                { name: 'Angry Goblin', maxHp: 50, currentHp: 50, baseDamage: 8, intent: 'Attack' },
-                { name: 'Vicious Wolf', maxHp: 60, currentHp: 60, baseDamage: 7, intent: 'Attack' },
-                { name: 'Armored Guard', maxHp: 55, currentHp: 55, baseDamage: 5, intent: 'Attack' }, // Lower damage, higher HP
+                { name: 'Angry Goblin', maxHp: 50, currentHp: 50, baseDamage: 8, intent: 'Attack', vulnerable: 0 },
+                { name: 'Vicious Wolf', maxHp: 60, currentHp: 60, baseDamage: 7, intent: 'Attack', vulnerable: 0 },
+                { name: 'Armored Guard', maxHp: 55, currentHp: 55, baseDamage: 5, intent: 'Attack', vulnerable: 0 }, // Lower damage, higher HP
             ],
             'high': [
                 // High stats or specialized threat
-                { name: 'Stone Golem', maxHp: 70, currentHp: 70, baseDamage: 6, intent: 'Attack' },
-                { name: 'Shadow Walker', maxHp: 45, currentHp: 45, baseDamage: 10, intent: 'Attack' }, // High damage, low HP (glass cannon)
+                { name: 'Stone Golem', maxHp: 70, currentHp: 70, baseDamage: 6, intent: 'Attack', vulnerable: 0 },
+                { name: 'Shadow Walker', maxHp: 45, currentHp: 45, baseDamage: 10, intent: 'Attack', vulnerable: 0 }, // High damage, low HP (glass cannon)
             ],
             'boss': [
                 // Final Boss
-                { name: 'Slime Boss', maxHp: 120, currentHp: 120, baseDamage: 12, intent: 'Attack' },
+                { name: 'Slime Boss', maxHp: 120, currentHp: 120, baseDamage: 12, intent: 'Attack', vulnerable: 0 },
             ]
         };
 
@@ -390,6 +394,43 @@
                     game.state.player.currentEnergy += 1;
                 }
             },
+            // --- NEW CARDS ---
+            'shred': {
+                name: 'Shred',
+                cost: 1,
+                type: 'attack',
+                description: 'Deal 5 damage. Apply 2 Vulnerable.',
+                effect: (game) => {
+                    game.takeDamage(game.state.enemy, 5);
+                    game.state.enemy.vulnerable += 2;
+                    game.addLog(`You play Shred, applying 2 Vulnerable to ${game.state.enemy.name}.`);
+                }
+            },
+            'prepare': {
+                name: 'Prepare',
+                cost: 0,
+                type: 'utility',
+                description: 'Draw 2 cards.',
+                effect: (game) => {
+                    game.addLog('You Prepare, drawing 2 cards.');
+                    game.drawCard();
+                    game.drawCard();
+                }
+            },
+            'first_aid': {
+                name: 'First Aid',
+                cost: 1,
+                type: 'utility',
+                description: 'Heal 5 HP (Max HP is 80).',
+                effect: (game) => {
+                    const player = game.state.player;
+                    const oldHp = player.currentHp;
+                    player.currentHp = Math.min(player.maxHp, player.currentHp + 5);
+                    const healedAmount = player.currentHp - oldHp;
+                    game.addLog(`You use First Aid, healing for ${healedAmount} HP.`);
+                }
+            },
+            // --- EXISTING UPGRADED CARDS ---
             'slash': {
                 name: 'Slash',
                 cost: 1, 
@@ -433,7 +474,7 @@
         };
 
         // Cards available for selection in the New Card upgrade option
-        const CARD_CHOICE_POOL = [ 'slash', 'iron_skin', 'fireball', 'fortify' ];
+        const CARD_CHOICE_POOL = [ 'slash', 'iron_skin', 'fireball', 'fortify', 'shred', 'prepare', 'first_aid' ];
 
 
         // --- Game State Variables ---
@@ -445,7 +486,11 @@
                 maxEnergy: 3,
                 currentEnergy: 3,
             },
-            enemy: {}, 
+            // Initialize enemy with default empty values, including new statuses
+            enemy: {
+                name: 'Awaiting Opponent',
+                maxHp: 1, currentHp: 1, baseDamage: 0, intent: 'Unknown', vulnerable: 0
+            }, 
             deck: [],
             hand: [],
             discard: [],
@@ -461,6 +506,8 @@
             playerBlockValue: document.getElementById('player-block-value'),
             enemyHp: document.getElementById('enemy-hp'),
             enemyName: document.getElementById('enemy-name'),
+            enemyVulnerable: document.getElementById('enemy-vulnerable'), // New
+            enemyVulnerableValue: document.getElementById('enemy-vulnerable-value'), // New
             currentEnergy: document.getElementById('current-energy'),
             deckCount: document.getElementById('deck-count'),
             discardCount: document.getElementById('discard-count'),
@@ -480,7 +527,7 @@
             cardChoiceContainer: document.getElementById('card-choice-container'),
             skipCardButton: document.getElementById('skip-card-button'),
 
-            // NEW: Enemy Choice elements
+            // Enemy Choice elements
             enemyChoiceModal: document.getElementById('enemy-choice-modal'),
             enemyChoiceContainer: document.getElementById('enemy-choice-container'),
             enemyChoiceModalTitle: document.querySelector('#enemy-choice-modal h2'),
@@ -622,13 +669,22 @@
                 elements.enemyHp.textContent = `${enemy.currentHp}/${enemy.maxHp}`;
                 elements.enemyIntentText.textContent = `${enemy.intent} (${enemy.baseDamage} Damage)`;
 
-
+                // Player Block UI
                 if (player.block > 0) {
                     elements.playerBlock.style.display = 'block';
                     elements.playerBlockValue.textContent = player.block;
                 } else {
                     elements.playerBlock.style.display = 'none';
                     elements.playerBlockValue.textContent = '0';
+                }
+
+                // Enemy Vulnerable UI (New)
+                if (enemy.vulnerable > 0) {
+                    elements.enemyVulnerable.style.display = 'block';
+                    elements.enemyVulnerableValue.textContent = enemy.vulnerable;
+                } else {
+                    elements.enemyVulnerable.style.display = 'none';
+                    elements.enemyVulnerableValue.textContent = '0';
                 }
 
                 this.renderHand();
@@ -681,14 +737,27 @@
                     }
                     this.state.player.currentHp -= actualDamage;
                     this.addLog(`You take ${actualDamage} damage (Blocked ${damage - actualDamage}).`);
+
                 } else if (target === this.state.enemy) {
-                    target.currentHp -= damage;
-                    this.addLog(`${target.name} takes ${damage} damage.`);
+                    let actualDamage = damage;
+                    if (target.vulnerable > 0) {
+                        // Vulnerable increases damage by 50%
+                        const bonusDamage = Math.floor(damage * 0.5); 
+                        actualDamage += bonusDamage;
+                        this.addLog(`Vulnerable applied! Base damage of ${damage} increased to ${actualDamage} (${bonusDamage} bonus).`);
+                    } else {
+                        this.addLog(`${target.name} takes ${actualDamage} damage.`);
+                    }
+                    target.currentHp -= actualDamage;
                 }
 
                 if (target.currentHp < 0) {
                     target.currentHp = 0;
                 }
+                if (this.state.player.currentHp > this.state.player.maxHp) {
+                    this.state.player.currentHp = this.state.player.maxHp;
+                }
+
 
                 this.updateUI();
                 this.checkGameOver();
@@ -738,6 +807,12 @@
                 if (this.checkGameOver()) return;
 
                 this.addLog(`--- Your Turn Start (Stage ${this.state.currentStage}/${this.state.targetVictories}) ---`, true);
+                
+                // 0. Status Decay (New: Vulnerable status decreases by 1)
+                if (this.state.enemy.vulnerable > 0) {
+                    this.state.enemy.vulnerable -= 1;
+                    this.addLog(`Enemy Vulnerable reduced by 1. Remaining: ${this.state.enemy.vulnerable}.`);
+                }
                 
                 // 1. Reset Energy
                 this.state.player.currentEnergy = this.state.player.maxEnergy;
@@ -794,8 +869,8 @@
                 this.shuffle(availableCards);
                 
                 const card1Data = CARD_DEFINITIONS[availableCards.pop()];
-                // Use choice 1 again if there's only one card left in the pool
-                const card2Id = availableCards.length > 0 ? availableCards.pop() : Object.keys(CARD_DEFINITIONS).find(key => CARD_DEFINITIONS[key].name === card1Data.name);
+                // Ensure choice 2 is different, or clone choice 1 if only one option remains
+                let card2Id = availableCards.length > 0 ? availableCards.pop() : Object.keys(CARD_DEFINITIONS).find(key => CARD_DEFINITIONS[key].name === card1Data.name);
                 const card2Data = CARD_DEFINITIONS[card2Id];
 
                 // Note the 'choice' mode for non-interactive selection cards
@@ -891,7 +966,10 @@
                     <p class="mt-4 text-sm text-gray-400 italic">Difficulty: ${enemyDefinition.maxHp > 100 ? 'Boss' : (enemyDefinition.maxHp > 60 ? 'High' : (enemyDefinition.maxHp > 45 ? 'Medium' : 'Low'))}</p>
                 `;
                 // Clone the object so we can reset its HP later
-                cardEl.addEventListener('click', () => this.selectEnemy(JSON.parse(JSON.stringify(enemyDefinition))));
+                // Also ensure new status (vulnerable) is reset/cloned
+                const enemyState = JSON.parse(JSON.stringify(enemyDefinition));
+                enemyState.vulnerable = 0; // Reset status on start
+                cardEl.addEventListener('click', () => this.selectEnemy(enemyState));
                 return cardEl;
             },
             
@@ -1025,6 +1103,9 @@
                 this.state.deck = [];
                 this.state.hand = [];
                 this.state.discard = [];
+                
+                // Reset enemy state for the next fight
+                this.state.enemy = { name: 'Awaiting Opponent', maxHp: 1, currentHp: 1, baseDamage: 0, intent: 'Unknown', vulnerable: 0 };
 
                 elements.combatLog.innerHTML = `<h3 class="text-md font-bold mb-1 border-b border-gray-600 pb-1">Combat Log</h3>`;
 
