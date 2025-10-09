@@ -1,0 +1,25 @@
+
+
+<h2> ARE YOU A KRIS?</h2>
+
+<script>
+	function myAntiKris() {
+		let myInput = document.getElementById('txtIn').value
+		let myOut = document.getElementById('myOutput')
+		let mySome = ''
+			if (myInput === 'Kris' || myInput === 'Kristopher') {
+				mySome = 'GET OUT, NERDS ONLY'
+			} else {
+				mySome = 'Something needs to be here'
+			}
+			
+			myOut.innerHTML = mySome
+		
+	}
+</script>
+
+
+
+<input type=text id="txtIn"><br>
+<input type=button value="Submit" onclick="{myAntiKris()}">
+<div id="myOutput">...</div>
