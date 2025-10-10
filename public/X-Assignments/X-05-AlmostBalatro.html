@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Card Draw Game with Dedicated Dollar Currency and Five Jokers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        
+        :root {
+            --red-card: #EF4444; 
+            --black-card: #1F2937; 
+            --selected-card: #FCD34D; 
+            --joker-gold: #FCD34D;
+            --money-green: #10B981; 
+            
+            /* Joker Colors */
+            --joker-bg-mult: #8B5CF6; /* Purple (Flat Multiplier) */
+            --joker-bg-diamond: #F59E0B; /* Amber (Greedy - Diamond) */
+            --joker-bg-heart: #F87171; /* Red (Lusty - Heart) */
+            --joker-bg-spade: #4B5563; /* Gray (Wrathful - Spade) */
+            --joker-bg-club: #10B981; /* Emerald (Gluttonous - Club) */
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; 
+            color: #F9FAFB; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        /* --- Card Styles (Regular Hand Card) --- */
+        .card {
+            width: 80px;
+            height: 120px;
+            background-color: #FEFEFE;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            font-weight: 700;
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out, border 0.1s ease-out;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 0 15px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .card.selected {
+            border: 4px solid var(--selected-card);
+            transform: translateY(-8px) scale(1.05) rotate(-2deg);
+            box-shadow: 0 20px 30px rgba(252, 211, 77, 0.5); 
+        }
+
+        .rank {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .suit {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+
+        .red-suit {
+            color: var(--red-card);
+        }
+
+        .black-suit {
+            color: var(--black-card);
+        }
+        
+        /* --- Small Deck Card for Viewer --- */
+        .deck-card-small {
+            width: 40px;
+            height: 60px;
+            background-color: #FEFEFE;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px;
+            font-weight: 700;
+            cursor: default;
+        }
+        .deck-card-small .rank {
+             font-size: 0.8rem;
+             line-height: 1;
+        }
+        .deck-card-small .suit {
+             font-size: 1.1rem;
+             line-height: 1;
+        }
+        .deck-card-small .rank.transform {
+             display: none; /* Hide inverted rank for compactness */
+        }
+        
+        /* --- Joker Display Card --- */
+        #joker-display-container {
+            min-height: 140px;
+            padding: 20px 0;
+            border-top: 1px dashed #374151;
+            margin-top: 20px;
+        }
+        
+        .joker-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .joker-card {
+            width: 90px;
+            height: 135px;
+            border: 4px solid var(--joker-gold);
+            border-radius: 12px;
+            padding: 10px;
+            color: #FFFFFF;
+            font-weight: 700;
+            transform: rotate(-3deg);
+            animation: pulse-shadow 3s infinite alternate;
+            transition: background 0.2s;
+            flex-shrink: 0;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .joker-mult-card {
+            background: linear-gradient(135deg, var(--joker-bg-mult) 0%, #3B82F6 100%);
+        }
+
+        .joker-diamond-card {
+            background: linear-gradient(135deg, var(--joker-bg-diamond) 0%, #FBBF24 100%);
+        }
+        
+        .joker-heart-card {
+            background: linear-gradient(135deg, var(--joker-bg-heart) 0%, #DC2626 100%);
+        }
+        
+        .joker-spade-card {
+            background: linear-gradient(135deg, var(--joker-bg-spade) 0%, #374151 100%);
+        }
+
+        .joker-club-card {
+            background: linear-gradient(135deg, var(--joker-bg-club) 0%, #059669 100%);
+        }
+
+        .joker-title {
+            font-size: 1.1rem;
+            line-height: 1.2;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px #000;
+        }
+        
+        .joker-mult-value {
+            font-size: 1.7rem;
+            line-height: 1;
+            color: var(--joker-gold);
+            text-shadow: 2px 2px 3px #000;
+        }
+        
+        @keyframes pulse-shadow {
+            from { box-shadow: 0 10px 20px rgba(139, 92, 246, 0.5); }
+            to { box-shadow: 15px 30px rgba(252, 211, 77, 0.8); }
+        }
+
+        /* --- Button Styles (Unchanged) --- */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.15s ease-in-out;
+            box-shadow: 0 4px #00000033;
+            cursor: pointer;
+            white-space: nowrap; 
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px #00000033;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px #00000033;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.5);
+            box-shadow: none;
+        }
+        
+        .btn-primary { background-color: #3B82F6; color: #FFFFFF; }
+        .btn-warning { background-color: #FBBF24; color: #1F2937; }
+        .btn-secondary { background-color: #6B7280; color: #FFFFFF; }
+        .btn-shop { background-color: #8B5CF6; color: #FFFFFF; }
+
+        /* --- Layout & Controls --- */
+        #hand-container {
+            min-height: 160px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 20px 0;
+        }
+
+        #controls {
+            background-color: #1F2937; 
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        #deck-info, #round-stats, #turn-limits {
+             display: flex;
+             justify-content: center;
+             flex-wrap: wrap;
+             gap: 1.5rem;
+             margin-bottom: 1rem;
+        }
+        
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none; 
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .modal-container {
+            background-color: #1F2937; 
+            border-radius: 16px;
+            max-width: 95%;
+            width: 800px; /* Increased size for shop */
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.9);
+            padding: 24px;
+            transform: scale(0.95);
+            transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+            opacity: 0;
+        }
+        .modal-overlay.open .modal-container {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        /* Shop Item Card */
+        .shop-item {
+            background-color: #111827; 
+            border: 2px solid #374151; 
+            border-radius: 12px;
+            padding: 16px;
+            transition: border-color 0.2s, transform 0.1s;
+        }
+        .shop-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        #deck-card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #111827;
+            border-radius: 8px;
+        }
+
+        @media (min-width: 768px) {
+            .shop-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .shop-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #controls > div {
+                justify-content: space-around;
+            }
+            .shop-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 640px) {
+            .card {
+                width: 55px;
+                height: 90px;
+            }
+            .rank { font-size: 1.0rem; }
+            .suit { font-size: 1.3rem; }
+            #hand-container { gap: 8px; }
+            .btn { 
+                padding: 8px 12px;
+                font-size: 0.75rem;
+            }
+            #controls { 
+                flex-direction: row; 
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            #controls > div {
+                justify-content: center;
+                width: 100%;
+            }
+            .joker-card {
+                width: 70px;
+                height: 105px;
+            }
+            .joker-title { font-size: 0.8rem; }
+            .joker-mult-value { font-size: 1.4rem; }
+            .joker-group {
+                gap: 10px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-blue-400">The 8-Card Draw: Round Challenge</h1>
+        <p class="text-gray-400 mt-2">Strategically score hands (max 5 cards) or exchange cards to improve your draw.</p>
+    </header>
+
+    <div id="controls" class="flex flex-col justify-between items-center space-y-4 md:space-y-0 mb-8">
+        
+        <!-- Deck & Turn Score -->
+        <div id="deck-info" class="flex space-x-4 text-lg font-semibold w-full justify-center">
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Deck: <span id="deck-count" class="text-yellow-400">0</span></p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Discard: <span id="discard-count" class="text-red-400">0</span></p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Turn Score: <span id="score-count" class="text-green-400">0</span></p>
+        </div>
+        
+        <!-- Round & Currency Stats -->
+        <div id="round-stats" class="flex space-x-4 text-lg font-semibold w-full justify-center">
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Round: <span id="round-number" class="text-purple-400">-</span> / 3</p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Goal: <span id="round-goal" class="text-orange-400">---</span></p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Poker Points (Goal): <span id="poker-points" class="text-blue-400">0</span></p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Dollars (Currency): $<span id="dollars-count" class="text-money-green">0</span></p>
+        </div>
+
+        <!-- Action Limits -->
+        <div id="turn-limits" class="flex text-lg font-semibold w-full justify-center mt-4">
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Hand Size: <span id="hand-limit" class="text-pink-400">0</span></p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Scores Left: <span id="scores-left" class="text-purple-400">0</span> / <span id="scores-max">0</span></p>
+            <p class="bg-gray-700 p-2 rounded-lg shadow-inner">Exchanges Left: <span id="exchanges-left" class="text-indigo-400">0</span> / <span id="exchanges-max">0</span></p>
+        </div>
+
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap space-x-2 md:space-x-3 w-full md:w-auto justify-center mt-5">
+            <button id="score-guide-btn" class="btn btn-primary bg-purple-600 hover:bg-purple-700">Score Guide</button>
+            <button id="view-deck-btn" class="btn btn-primary bg-yellow-600 hover:bg-yellow-700" disabled>View Deck</button>
+            <button id="start-game-btn" class="btn btn-primary">Start Game</button>
+            <button id="start-turn-btn" class="btn btn-primary" disabled>Start Turn (Draw Hand)</button>
+            <button id="sort-hand-btn" class="btn btn-primary bg-indigo-600 hover:bg-indigo-700" disabled>Sort Hand</button>
+            <button id="exchange-cards-btn" class="btn btn-secondary" disabled>Exchange Cards</button> 
+            <button id="score-hand-btn" class="btn btn-warning" disabled>Score Hand</button>
+            <button id="end-turn-btn" class="btn btn-secondary" disabled>End Turn</button>
+        </div>
+    </div>
+    
+    <div id="message" class="text-center p-4 text-xl font-semibold mb-6 bg-gray-700 rounded-lg text-green-300">
+        Click "Start Game" to begin the 3-Round Challenge!
+    </div>
+
+    <section id="hand-section" class="bg-gray-800 p-6 rounded-xl shadow-2xl">
+        <h2 class="text-2xl font-bold mb-4 text-center text-blue-300">Your Hand (<span id="hand-size">0</span> Cards)</h2>
+        <div id="hand-container">
+            <!-- Cards will be rendered here -->
+            <p id="hand-placeholder" class="text-gray-500 italic">Draw cards to fill your hand.</p>
+        </div>
+    </section>
+    
+    <!-- JOKER DISPLAY SECTION -->
+    <div id="joker-display-container" class="flex justify-center">
+        <div id="joker-card-slot" class="joker-group text-center">
+            <!-- Joker cards will be rendered here -->
+            <p class="text-gray-500 italic text-sm mt-2">Joker Bonuses: None purchased yet.</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Score Guide Modal -->
+<div id="score-guide-modal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="flex justify-between items-center border-b border-gray-600 pb-3 mb-4">
+            <h3 class="text-3xl font-bold text-yellow-400">Official Score Guide</h3>
+            <button data-close-modal="score-guide-modal" class="text-gray-400 hover:text-white text-2xl font-light focus:outline-none">
+                &times;
+            </button>
+        </div>
+        
+        <div class="text-gray-300 mb-6">
+            <p class="mb-3 text-lg font-semibold">
+                Formula: (Base Chips + Rank Bonus Chips) $\times$ (Multiplier + **Joker Bonuses**) = Total Score (Rounded)
+            </p>
+            <p class="text-sm italic">
+                **Rank Bonus Chips** are calculated using custom values: **Aces=11**, **Face Cards (J, Q, K)=10**, and number cards use their face value. For **High Card**, only the single highest card's chip value is used.
+            </p>
+        </div>
+        
+        <div id="score-guide-content" class="rounded-lg overflow-hidden border border-gray-700">
+            <!-- Table content populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Deck Viewer Modal -->
+<div id="deck-viewer-modal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="flex justify-between items-center border-b border-yellow-600 pb-3 mb-4">
+            <h3 class="text-3xl font-bold text-yellow-400">Remaining Deck Viewer (Sorted)</h3>
+            <button data-close-modal="deck-viewer-modal" class="text-gray-400 hover:text-white text-2xl font-light focus:outline-none">
+                &times;
+            </button>
+        </div>
+        
+        <p class="text-gray-300 mb-4">
+            Total cards remaining in the draw pile: <span class="font-bold text-lg text-yellow-300" id="deck-viewer-count">0</span>
+        </p>
+        <p class="text-sm text-gray-400 mb-4 text-center">
+            Cards are sorted by **Suit (♠, ♥, ♦, ♣)**, then by **Rank (A to 2)**.
+        </p>
+
+        <div id="deck-card-container">
+            <!-- Small cards representing the sorted deck contents will be rendered here -->
+        </div>
+    </div>
+</div>
+
+<!-- Shop Modal -->
+<div id="shop-modal" class="modal-overlay">
+    <div class="modal-container">
+        <div class="flex flex-col items-center border-b border-purple-600 pb-3 mb-6">
+            <h3 class="text-4xl font-bold text-purple-400 mb-2">The Inter-Round Shop</h3>
+            <p class="text-xl text-gray-300">Spend your **Dollars** to upgrade your abilities!</p>
+            <p class="text-2xl font-bold mt-2">Funds: $<span id="shop-funds" class="text-money-green">0</span></p>
+        </div>
+
+        <div id="shop-items-container" class="shop-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Shop items generated by JS -->
+        </div>
+
+        <div class="text-center pt-4 border-t border-gray-700">
+            <button id="exit-shop-btn" class="btn btn-shop bg-green-600 hover:bg-green-700 text-xl">
+                Exit Shop and Continue to Next Round
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Global Game State & Constants ---
+    let deck = [];
+    let hand = [];
+    let discardPile = [];
+    let selectedCardIds = []; 
+    let gameState = 'SETUP'; // SETUP, IDLE, TURN_ACTIVE, SHOPPING
+    
+    // CHANGED TO 'var' FOR RELIABLE GLOBAL ACCESS (FIXES TYPE ERROR)
+    var score = 0; 
+    const CUMULATIVE_GOALS = [300, 450, 600]; 
+    var currentRound = 0; 
+    var pokerPoints = 0; 
+    var dollars = 0; 
+
+    let TARGET_HAND_SIZE = 8; 
+    let MAX_SCORES_PER_TURN = 4; 
+    let MAX_EXCHANGES_PER_TURN = 3; 
+
+    // JOKER 1: Permanent Multiplier
+    var JOKER_MULTIPLIER_BONUS = 0.0; // Changed from let
+    var MULT_JOKER_LEVEL = 0; // Changed from let
+    
+    // JOKERS 2-5: Suit-specific Multiplier Jokers
+    const SUIT_JOKER_MULTIPLIER_PER_CARD = 3.0; // The fixed bonus for each scoring card of the target suit
+
+    // Diamond: Greedy Joker (D)
+    var DIAMOND_JOKER_BONUS = 0.0; // Changed from let
+    var DIAMOND_JOKER_LEVEL = 0; // Changed from let
+    // Heart: Lusty Joker (H)
+    var HEART_JOKER_BONUS = 0.0; // Changed from let
+    var HEART_JOKER_LEVEL = 0; // Changed from let
+    // Spade: Wrathful Joker (S)
+    var SPADE_JOKER_BONUS = 0.0; // Changed from let
+    var SPADE_JOKER_LEVEL = 0; // Changed from let
+    // Club: Gluttonous Joker (C)
+    var CLUB_JOKER_BONUS = 0.0; // Changed from let
+    var CLUB_JOKER_LEVEL = 0; // Changed from let
+
+
+    let cardIdCounter = 0;
+    var handsScoredThisTurn = 0; // Changed from let
+    var exchangesUsedThisTurn = 0; // Changed from let
+    const MAX_PLAY_CARDS = 5;
+
+    // --- Shop Item Definition (Costs are in Dollars) ---
+    const SHOP_ITEMS = {
+        'mult_joker': { 
+            id: 'mult_joker',
+            name: "Permanent Multiplier Joker",
+            suit: null,
+            description: "Permanently add $+4.0$ to the score multiplier for every hand you score.",
+            costs: [3, 5, 7, 9, 11], 
+            limit: 5,
+            levelKey: 'MULT_JOKER_LEVEL',
+            bonusKey: 'JOKER_MULTIPLIER_BONUS',
+            bonusPerLevel: 4.0,
+        },
+        'diamond_joker': {
+            id: 'diamond_joker',
+            name: "Greedy Joker ($\u2666$)",
+            suit: 'D',
+            description: "Adds **$+3.0$** to the score multiplier for *each Diamond* ($\u2666$) card in a scored hand.",
+            costs: [4, 7, 10], 
+            limit: 3,
+            levelKey: 'DIAMOND_JOKER_LEVEL',
+            bonusKey: 'DIAMOND_JOKER_BONUS',
+            bonusPerLevel: SUIT_JOKER_MULTIPLIER_PER_CARD,
+        },
+        'heart_joker': {
+            id: 'heart_joker',
+            name: "Lusty Joker ($\u2665$)",
+            suit: 'H',
+            description: "Adds **$+3.0$** to the score multiplier for *each Heart* ($\u2665$) card in a scored hand.",
+            costs: [4, 7, 10], 
+            limit: 3,
+            levelKey: 'HEART_JOKER_LEVEL',
+            bonusKey: 'HEART_JOKER_BONUS',
+            bonusPerLevel: SUIT_JOKER_MULTIPLIER_PER_CARD,
+        },
+        'spade_joker': {
+            id: 'spade_joker',
+            name: "Wrathful Joker ($\u2660$)",
+            suit: 'S',
+            description: "Adds **$+3.0$** to the score multiplier for *each Spade* ($\u2660$) card in a scored hand.",
+            costs: [4, 7, 10], 
+            limit: 3,
+            levelKey: 'SPADE_JOKER_LEVEL',
+            bonusKey: 'SPADE_JOKER_BONUS',
+            bonusPerLevel: SUIT_JOKER_MULTIPLIER_PER_CARD,
+        },
+        'club_joker': {
+            id: 'club_joker',
+            name: "Gluttonous Joker ($\u2663$)",
+            suit: 'C',
+            description: "Adds **$+3.0$** to the score multiplier for *each Club* ($\u2663$) card in a scored hand.",
+            costs: [4, 7, 10], 
+            limit: 3,
+            levelKey: 'CLUB_JOKER_LEVEL',
+            bonusKey: 'CLUB_JOKER_BONUS',
+            bonusPerLevel: SUIT_JOKER_MULTIPLIER_PER_CARD,
+        }
+    };
+    
+    const ROUND_BONUSES = {
+        1: 3, 
+        2: 4, 
+        3: 5, 
+    };
+
+    const POKER_SCORES = {
+        'Royal Flush': { baseChips: 100, multiplier: 8.0 },
+        'Straight Flush': { baseChips: 100, multiplier: 8.0 },
+        'Four of a Kind': { baseChips: 60, multiplier: 7.0 },
+        'Full House': { baseChips: 40, multiplier: 4.0 },
+        'Flush': { baseChips: 35, multiplier: 4.0 },
+        'Straight': { baseChips: 30, multiplier: 4.0 },
+        'Three of a Kind': { baseChips: 30, multiplier: 3.0 },
+        'Two Pair': { baseChips: 20, multiplier: 2.0 },
+        'Pair': { baseChips: 10, multiplier: 2.0 },
+        'High Card': { baseChips: 5, multiplier: 1.0 }
+    };
+
+    const SUITS = {
+        'H': { symbol: '♥', color: 'red-suit', jokerId: 'heart_joker', bgVar: 'var(--joker-bg-heart)', name: 'Lusty' },
+        'D': { symbol: '♦', color: 'red-suit', jokerId: 'diamond_joker', bgVar: 'var(--joker-bg-diamond)', name: 'Greedy' },
+        'C': { symbol: '♣', color: 'black-suit', jokerId: 'club_joker', bgVar: 'var(--joker-bg-club)', name: 'Gluttonous' },
+        'S': { symbol: '♠', color: 'black-suit', jokerId: 'spade_joker', bgVar: 'var(--joker-bg-spade)', name: 'Wrathful' },
+    };
+    // Define an order for sorting suits: Spades > Hearts > Diamonds > Clubs (Standard Bridge/Poker high-to-low)
+    const SUIT_ORDER = { 'S': 4, 'H': 3, 'D': 2, 'C': 1 };
+    
+    const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    
+    const RANK_VALUES = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+    const CHIP_VALUES = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 10, 'Q': 10, 'K': 10, 'A': 11 };
+
+
+    // --- DOM Elements ---
+    const deckCountEl = document.getElementById('deck-count');
+    const discardCountEl = document.getElementById('discard-count');
+    const scoreCountEl = document.getElementById('score-count');
+    const handContainerEl = document.getElementById('hand-container');
+    const handSizeEl = document.getElementById('hand-size');
+    const messageEl = document.getElementById('message');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const startTurnBtn = document.getElementById('start-turn-btn');
+    const scoreHandBtn = document.getElementById('score-hand-btn');
+    const exchangeCardsBtn = document.getElementById('exchange-cards-btn'); 
+    const endTurnBtn = document.getElementById('end-turn-btn');
+    const handLimitEl = document.getElementById('hand-limit');
+    const scoresLeftEl = document.getElementById('scores-left'); 
+    const scoresMaxEl = document.getElementById('scores-max'); 
+    const exchangesLeftEl = document.getElementById('exchanges-left'); 
+    const exchangesMaxEl = document.getElementById('exchanges-max'); 
+    
+    const roundNumberEl = document.getElementById('round-number'); 
+    const roundGoalEl = document.getElementById('round-goal'); 
+    const pokerPointsEl = document.getElementById('poker-points'); 
+    const dollarsCountEl = document.getElementById('dollars-count'); 
+    
+    const sortHandBtn = document.getElementById('sort-hand-btn');
+
+    const jokerCardSlotEl = document.getElementById('joker-card-slot');
+
+    // Modal Elements
+    const scoreGuideBtn = document.getElementById('score-guide-btn');
+    const scoreGuideModal = document.getElementById('score-guide-modal');
+    const scoreGuideContent = document.getElementById('score-guide-content');
+
+    // Shop Elements
+    const shopModal = document.getElementById('shop-modal');
+    const shopFundsEl = document.getElementById('shop-funds');
+    const shopItemsContainerEl = document.getElementById('shop-items-container');
+    const exitShopBtn = document.getElementById('exit-shop-btn');
+    
+    // Deck Viewer Elements 
+    const viewDeckBtn = document.getElementById('view-deck-btn');
+    const deckViewerModal = document.getElementById('deck-viewer-modal');
+    const deckCardContainer = document.getElementById('deck-card-container');
+    const deckViewerCountEl = document.getElementById('deck-viewer-count');
+
+
+    // --- Core Deck Management ---
+    function createDeck() { 
+        const newDeck = [];
+        cardIdCounter = 0; 
+        for (const suit of Object.keys(SUITS)) {
+            for (const rank of RANKS) {
+                newDeck.push({ 
+                    rank, 
+                    suit, 
+                    id: `${suit}-${rank}-${cardIdCounter++}`,
+                    value: RANK_VALUES[rank],   
+                    chipValue: CHIP_VALUES[rank] 
+                });
+            }
+        }
+        return newDeck;
+    }
+
+    function shuffleDeck(array) { 
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]];
+        }
+    }
+
+    function drawCard(count) { 
+        let actualDrawnCount = 0;
+        for (let i = 0; i < count; i++) {
+            if (deck.length === 0) {
+                if (discardPile.length > 0) {
+                    messageEl.textContent = `Deck empty! Reshuffling ${discardPile.length} cards from the discard pile.`;
+                    deck = [...discardPile];
+                    discardPile = [];
+                    shuffleDeck(deck);
+                } else {
+                    messageEl.textContent = "No cards left to draw! Game over?";
+                    startTurnBtn.disabled = true; 
+                    break;
+                }
+            }
+            const card = deck.pop();
+            hand.push(card);
+            actualDrawnCount++;
+        }
+        return actualDrawnCount;
+    }
+    
+    // --- Card Sorting Logic ---
+    function sortHand() {
+        hand.sort((a, b) => {
+            // Primary sort: Suit (High to Low: S > H > D > C)
+            if (a.suit !== b.suit) {
+                return SUIT_ORDER[b.suit] - SUIT_ORDER[a.suit];
+            }
+            // Secondary sort: Rank (High to Low, A=14 down to 2)
+            return b.value - a.value;
+        });
+        messageEl.textContent = "Your hand has been sorted by Suit (♠ > ♥ > ♦ > ♣) then Rank (A > K... > 2).";
+        renderGame();
+    }
+
+
+    // --- Poker Evaluation Logic (Unchanged) ---
+    function getRankCounts(cards) { 
+        const counts = {};
+        cards.forEach(card => { counts[card.value] = (counts[card.value] || 0) + 1; });
+        return counts;
+    }
+
+    function isFlush(cards) { 
+        if (cards.length < 5) return false;
+        const firstSuit = cards[0].suit;
+        return cards.every(card => card.suit === firstSuit);
+    }
+
+    function isStraight(cards) { 
+        if (cards.length < 5) return false;
+        const values = cards.map(c => c.value).sort((a, b) => a - b);
+        const uniqueValues = [...new Set(values)];
+        if (uniqueValues.length < 5) return false;
+        let isStandardStraight = true;
+        for (let i = 0; i < uniqueValues.length - 1; i++) {
+            if (uniqueValues[i + 1] !== uniqueValues[i] + 1) {
+                isStandardStraight = false;
+                break;
+            }
+        }
+        if (isStandardStraight) return true;
+        if (uniqueValues.length === 5 && uniqueValues.includes(2) && uniqueValues.includes(3) && uniqueValues.includes(4) && uniqueValues.includes(5) && uniqueValues.includes(14)) {
+            return true;
+        }
+        return false;
+    }
+
+    function evaluatePokerHand(cards) { 
+        const count = cards.length;
+        if (count === 0) return 'None';
+        const rankCounts = getRankCounts(cards);
+        const counts = Object.values(rankCounts).sort((a, b) => b - a);
+        
+        if (count === 5) {
+            const straight = isStraight(cards);
+            const flush = isFlush(cards);
+            if (straight && flush) return 'Straight Flush';
+            if (counts[0] === 4) return 'Four of a Kind';
+            if (counts[0] === 3 && counts[1] === 2) return 'Full House';
+            if (flush) return 'Flush';
+            if (straight) return 'Straight';
+            if (counts[0] === 3) return 'Three of a Kind';
+            if (counts[0] === 2 && counts[1] === 2) return 'Two Pair';
+            if (counts[0] === 2) return 'Pair';
+            return 'High Card';
+        }
+        if (counts[0] === 4) return 'Four of a Kind';
+        const numPairs = counts.filter(c => c === 2).length;
+        const numSets = counts.filter(c => c === 3).length;
+        if (numSets === 1) return 'Three of a Kind';
+        if (numPairs >= 2) return 'Two Pair';
+        if (numPairs === 1) return 'Pair';
+        return 'High Card';
+    }
+
+
+    // --- DOM Rendering ---
+
+    /**
+     * Toggles the selection state of a card in the player's hand.
+     */
+    window.toggleCardSelection = function(cardId) {
+        if (gameState !== 'TURN_ACTIVE') {
+            messageEl.textContent = "You can only select cards during an active turn.";
+            return;
+        }
+        
+        const index = selectedCardIds.indexOf(cardId);
+        
+        if (index > -1) {
+            selectedCardIds.splice(index, 1);
+        } else {
+            if (selectedCardIds.length < MAX_PLAY_CARDS) {
+                selectedCardIds.push(cardId);
+            } else {
+                messageEl.textContent = `You can only select up to ${MAX_PLAY_CARDS} cards to play/exchange per action.`;
+            }
+        }
+        renderGame();
+    }
+
+    /**
+     * Generates the HTML for a single card object in the hand.
+     */
+    function renderCard(card) {
+        const suitInfo = SUITS[card.suit];
+        const isSelected = selectedCardIds.includes(card.id);
+        const selectedClass = isSelected ? 'selected' : '';
+
+        return `
+            <div 
+                class="card shadow-md ${selectedClass}" 
+                data-card-id="${card.id}" 
+                onclick="toggleCardSelection('${card.id}')"
+            >
+                <div class="rank ${suitInfo.color}">${card.rank}</div>
+                <div class="suit ${suitInfo.color}">${suitInfo.symbol}</div>
+                <div class="rank ${suitInfo.color} transform rotate-180">${card.rank}</div>
+            </div>
+        `;
+    }
+
+    /**
+     * Renders the visible Joker cards and bonuses. (UPDATED)
+     */
+    function renderJokerDisplay() {
+        // Read directly from the global state variables (now defined as var)
+        const jokerLevels = [MULT_JOKER_LEVEL, DIAMOND_JOKER_LEVEL, HEART_JOKER_LEVEL, SPADE_JOKER_LEVEL, CLUB_JOKER_LEVEL];
+        if (jokerLevels.every(level => level === 0)) {
+            jokerCardSlotEl.innerHTML = `<p class="text-gray-500 italic text-sm mt-2">Joker Bonuses: None purchased yet.</p>`;
+            return;
+        }
+        
+        let html = '';
+
+        // 1. Permanent Multiplier Joker
+        if (MULT_JOKER_LEVEL > 0) {
+            html += `
+                <div class="joker-card joker-mult-card flex flex-col items-center justify-center">
+                    <p class="joker-title">FLAT MULT</p>
+                    <p class="text-xs font-normal text-white mb-1">Permanent Bonus</p>
+                    <p class="joker-mult-value">$\times${JOKER_MULTIPLIER_BONUS.toFixed(1)}$</p>
+                    <p class="text-xs font-normal text-white mt-1">Lvl ${MULT_JOKER_LEVEL}</p>
+                </div>
+            `;
+        }
+        
+        // 2. Suit Jokers (Iterate through SUITS definition)
+        Object.keys(SUITS).forEach(suitKey => {
+            const suitInfo = SUITS[suitKey];
+            const jokerItem = SHOP_ITEMS[suitInfo.jokerId];
+            
+            // Accessing global variables via window[key] which now works since they are defined with 'var'
+            let currentLevel = window[jokerItem.levelKey];
+            let currentBonus = window[jokerItem.bonusKey];
+
+            if (currentLevel > 0) {
+                 html += `
+                    <div class="joker-card" style="background: linear-gradient(135deg, ${suitInfo.bgVar} 0%, ${suitKey === 'S' || suitKey === 'C' ? '#374151' : '#DC2626'} 100%);">
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <p class="joker-title">${suitInfo.name} (${suitInfo.symbol})</p>
+                            <p class="text-xs font-normal text-white mb-1">Per ${suitInfo.symbol} Card</p>
+                            <p class="joker-mult-value">$\times${currentBonus.toFixed(1)}$</p>
+                            <p class="text-xs font-normal text-white mt-1">Lvl ${currentLevel}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        jokerCardSlotEl.innerHTML = html;
+    }
+
+
+    /**
+     * Renders the current game state to the DOM.
+     */
+    function renderGame() {
+        // 1. Update deck, discard, and score counts
+        deckCountEl.textContent = deck.length;
+        discardCountEl.textContent = discardPile.length;
+        scoreCountEl.textContent = score; 
+        
+        // 2. Update Round, Poker Points, and Dollar Display
+        roundNumberEl.textContent = currentRound > 0 && currentRound <= CUMULATIVE_GOALS.length ? `${currentRound}` : '-';
+        pokerPointsEl.textContent = pokerPoints; 
+        dollarsCountEl.textContent = dollars; 
+        
+        if (currentRound > 0 && currentRound <= CUMULATIVE_GOALS.length) {
+            roundGoalEl.textContent = CUMULATIVE_GOALS[currentRound - 1];
+        } else {
+            roundGoalEl.textContent = '---';
+        }
+
+        // 3. Update dynamic limits display
+        const scoresRemaining = MAX_SCORES_PER_TURN - handsScoredThisTurn;
+        const exchangesRemaining = MAX_EXCHANGES_PER_TURN - exchangesUsedThisTurn;
+        
+        scoresLeftEl.textContent = `${scoresRemaining}`;
+        scoresMaxEl.textContent = `${MAX_SCORES_PER_TURN}`;
+        exchangesLeftEl.textContent = `${exchangesRemaining}`;
+        exchangesMaxEl.textContent = `${MAX_EXCHANGES_PER_TURN}`;
+        handLimitEl.textContent = `${TARGET_HAND_SIZE}`;
+        
+        // 4. Update the visual Joker display
+        renderJokerDisplay();
+
+
+        // 5. Update hand size and render the hand
+        handSizeEl.textContent = hand.length;
+        handContainerEl.innerHTML = ''; 
+
+        if (hand.length === 0) {
+            handContainerEl.innerHTML = '<p id="hand-placeholder" class="text-gray-500 italic">Draw cards to fill your hand.</p>';
+        } else {
+            const handHtml = hand.map(renderCard).join('');
+            handContainerEl.innerHTML = handHtml;
+        }
+
+        // 6. Update button states based on game state
+        const deckAvailable = deck.length > 0 || discardPile.length > 0;
+        const isTurnActive = gameState === 'TURN_ACTIVE';
+        const isShopping = gameState === 'SHOPPING';
+        const isSetup = gameState === 'SETUP';
+
+        startGameBtn.disabled = isSetup ? false : true;
+        viewDeckBtn.disabled = isSetup || isShopping; 
+        startTurnBtn.disabled = gameState !== 'IDLE' || !deckAvailable || isShopping;
+        endTurnBtn.disabled = !isTurnActive || isShopping;
+        
+        const actionDisabled = !isTurnActive || selectedCardIds.length === 0 || isShopping;
+        
+        const scoreLimitReached = scoresRemaining <= 0;
+        const exchangeLimitReached = exchangesRemaining <= 0;
+
+        scoreHandBtn.disabled = actionDisabled || scoreLimitReached;
+        exchangeCardsBtn.disabled = actionDisabled || !deckAvailable || exchangeLimitReached;
+        sortHandBtn.disabled = !isTurnActive || hand.length <= 1 || isShopping;
+
+        // 7. Manage Modals
+        if (isShopping) {
+            openShop(true);
+            toggleScoreGuide(false);
+            toggleDeckViewer(false); 
+        } else {
+            openShop(false);
+        }
+
+        // 8. Update message
+        if (isTurnActive) {
+            let actionMessage = '';
+            if (scoreLimitReached) actionMessage += ` (Score limit reached!)`;
+            if (exchangeLimitReached) actionMessage += ` (Exchange limit reached!)`;
+
+            if (selectedCardIds.length > 0) {
+                messageEl.textContent = `Selected: ${selectedCardIds.length} / ${MAX_PLAY_CARDS} cards. Choose to 'Score Hand' or 'Exchange Cards'. ${actionMessage}`;
+                messageEl.classList.remove('text-green-300');
+                messageEl.classList.add('text-yellow-300');
+            } else {
+                messageEl.textContent = `Round ${currentRound} Turn Active. Select up to ${MAX_PLAY_CARDS} cards to play, or click 'End Turn'.`;
+                messageEl.classList.remove('text-yellow-300');
+                messageEl.classList.add('text-green-300');
+            }
+        }
+    }
+
+
+    // --- Game Flow Functions ---
+
+    function startGame() {
+        // Reset all state
+        deck = createDeck();
+        hand = [];
+        discardPile = [];
+        selectedCardIds = [];
+        
+        // Match/Round Resets
+        score = 0;
+        pokerPoints = 0; 
+        dollars = 4; // Start with $4
+        currentRound = 1; 
+        handsScoredThisTurn = 0; 
+        exchangesUsedThisTurn = 0; 
+        
+        // Global Limit Resets 
+        TARGET_HAND_SIZE = 8; 
+        MAX_SCORES_PER_TURN = 4;
+        MAX_EXCHANGES_PER_TURN = 3;
+        
+        // JOKER RESETS
+        JOKER_MULTIPLIER_BONUS = 0.0; 
+        MULT_JOKER_LEVEL = 0; 
+        
+        DIAMOND_JOKER_BONUS = 0.0;
+        DIAMOND_JOKER_LEVEL = 0;
+        HEART_JOKER_BONUS = 0.0;
+        HEART_JOKER_LEVEL = 0;
+        SPADE_JOKER_BONUS = 0.0;
+        SPADE_JOKER_LEVEL = 0;
+        CLUB_JOKER_BONUS = 0.0;
+        CLUB_JOKER_LEVEL = 0;
+
+        shuffleDeck(deck);
+        
+        gameState = 'IDLE';
+        messageEl.textContent = `Match started! Welcome to Round ${currentRound}. Goal: ${CUMULATIVE_GOALS[currentRound - 1]} points (cumulative). Click "Start Turn" to draw your initial hand.`;
+        renderGame();
+    }
+
+    function startTurn() {
+        if (gameState !== 'IDLE') {
+            messageEl.textContent = "Cannot start turn now. Please end your current turn.";
+            return;
+        }
+
+        gameState = 'TURN_ACTIVE';
+        selectedCardIds = []; 
+        handsScoredThisTurn = 0; 
+        exchangesUsedThisTurn = 0; 
+
+        const cardsToDraw = TARGET_HAND_SIZE - hand.length;
+        const drawnCount = drawCard(cardsToDraw);
+
+        if (drawnCount > 0) {
+            messageEl.textContent = `Turn started! You drew ${drawnCount} card(s). Your hand size is now ${hand.length}.`;
+        } else {
+            gameState = 'IDLE';
+            messageEl.textContent = "Cannot start turn: No cards left to draw!";
+        }
+
+        renderGame();
+    }
+
+    function scoreHand() {
+        if (gameState !== 'TURN_ACTIVE' || selectedCardIds.length === 0) {
+            messageEl.textContent = "Please select 1 to 5 cards to play before clicking this button.";
+            return;
+        }
+        
+        if (handsScoredThisTurn >= MAX_SCORES_PER_TURN) {
+            messageEl.textContent = `You have already scored the maximum of ${MAX_SCORES_PER_TURN} hands this turn.`;
+            renderGame();
+            return;
+        }
+
+        const playedCards = [];
+        const newHand = [];
+
+        for (const card of hand) {
+            if (selectedCardIds.includes(card.id)) {
+                playedCards.push(card);
+            } else {
+                newHand.push(card);
+            }
+        }
+
+        const handType = evaluatePokerHand(playedCards);
+        const scoreConfig = POKER_SCORES[handType];
+        
+        let rankBonusChips = 0;
+        if (handType === 'High Card') {
+            const maxChipVal = Math.max(...playedCards.map(c => c.chipValue));
+            rankBonusChips = maxChipVal;
+        } else {
+            playedCards.forEach(card => { rankBonusChips += card.chipValue; });
+        }
+
+        const baseChips = scoreConfig.baseChips;
+        const baseMultiplier = scoreConfig.multiplier;
+        
+        // --- APPLY JOKER BONUSES (UPDATED FOR ALL SUITS) ---
+        let suitBonus = 0;
+        let suitBonusDetails = [];
+
+        const suitJokers = [
+            { key: 'D', bonus: DIAMOND_JOKER_BONUS, name: 'Diamond' },
+            { key: 'H', bonus: HEART_JOKER_BONUS, name: 'Heart' },
+            { key: 'S', bonus: SPADE_JOKER_BONUS, name: 'Spade' },
+            { key: 'C', bonus: CLUB_JOKER_BONUS, name: 'Club' },
+        ];
+
+        suitJokers.forEach(joker => {
+            if (joker.bonus > 0) {
+                const cardCount = playedCards.filter(card => card.suit === joker.key).length;
+                if (cardCount > 0) {
+                    const bonusGained = cardCount * joker.bonus;
+                    suitBonus += bonusGained;
+                    suitBonusDetails.push(`${bonusGained.toFixed(1)} ${joker.name}s`);
+                }
+            }
+        });
+        
+        const totalJokerBonus = JOKER_MULTIPLIER_BONUS + suitBonus;
+        const finalMultiplier = baseMultiplier + totalJokerBonus;
+        
+        const totalChips = baseChips + rankBonusChips;
+        const gainedScore = Math.round(totalChips * finalMultiplier);
+
+        score += gainedScore; 
+        discardPile.push(...playedCards);
+        hand = newHand;
+        
+        const cardsToDraw = TARGET_HAND_SIZE - hand.length;
+        let drawnRefillCount = cardsToDraw > 0 ? drawCard(cardsToDraw) : 0;
+        
+        const playedCount = selectedCardIds.length;
+        selectedCardIds = [];
+        handsScoredThisTurn++; 
+
+        let refillMessage = drawnRefillCount > 0 ? 
+            ` Drew ${drawnRefillCount} card${drawnRefillCount === 1 ? '' : 's'}s to refill the hand.` : 
+            ` Hand size remains ${hand.length}.`;
+            
+        let bonusDetails = `(Mult: ${baseMultiplier.toFixed(1)}`;
+        if (JOKER_MULTIPLIER_BONUS > 0) bonusDetails += ` + ${JOKER_MULTIPLIER_BONUS.toFixed(1)} Flat`;
+        if (suitBonus > 0) bonusDetails += ` + ${suitBonus.toFixed(1)} Suits (${suitBonusDetails.join(', ')})`;
+        bonusDetails += ` = **${finalMultiplier.toFixed(1)}** Total)`;
+
+
+        messageEl.innerHTML = `Scored ${playedCount} card(s): You hit a **${handType}**! ${bonusDetails}
+            <br>Gained **${gainedScore}** points. **Current Turn Score: ${score}**. ${refillMessage}`;
+        messageEl.classList.remove('text-green-300');
+        messageEl.classList.add('text-yellow-300');
+        
+        renderGame();
+    }
+    
+    function exchangeCards() {
+        if (gameState !== 'TURN_ACTIVE' || selectedCardIds.length === 0) {
+            messageEl.textContent = "Please select 1 to 5 cards to exchange before clicking this button.";
+            return;
+        }
+        
+        if (exchangesUsedThisTurn >= MAX_EXCHANGES_PER_TURN) {
+            messageEl.textContent = `You have already used the maximum of ${MAX_EXCHANGES_PER_TURN} exchanges this turn.`;
+            renderGame();
+            return;
+        }
+        
+        if (deck.length === 0 && discardPile.length === 0) {
+            messageEl.textContent = "Cannot exchange cards, the deck and discard pile are both empty!";
+            return;
+        }
+
+        const discardedCards = [];
+        const newHand = [];
+
+        for (const card of hand) {
+            if (selectedCardIds.includes(card.id)) {
+                discardedCards.push(card);
+            } else {
+                newHand.push(card);
+            }
+        }
+        
+        discardPile.push(...discardedCards);
+        hand = newHand;
+        
+        const cardsToDraw = TARGET_HAND_SIZE - hand.length;
+        let drawnRefillCount = cardsToDraw > 0 ? drawCard(cardsToDraw) : 0;
+        
+        const discardedCount = selectedCardIds.length;
+        selectedCardIds = [];
+        exchangesUsedThisTurn++; 
+
+        let refillMessage = drawnRefillCount > 0 ? 
+            ` Drew ${drawnRefillCount} card${drawnRefillCount === 1 ? '' : 's'}s to refill the hand.` : 
+            ` Hand size remains ${hand.length}.`;
+            
+        messageEl.textContent = `Exchanged ${discardedCount} card(s). No points scored this action. Exchanges left: ${MAX_EXCHANGES_PER_TURN - exchangesUsedThisTurn}.`;
+
+        renderGame();
+    }
+
+
+    /**
+     * Ends the current turn, calculates cumulative score, checks the round goal, and prepares for the next turn/round.
+     */
+    function endTurn() {
+        if (gameState !== 'TURN_ACTIVE') {
+            messageEl.textContent = "You must start a turn before ending one.";
+            return;
+        }
+
+        const finalTurnScore = score;
+        const currentGoalIndex = currentRound - 1;
+        const maxScoreActions = MAX_SCORES_PER_TURN;
+        
+        // 1. Calculate Dollar Bonus for UNUSED Scores
+        const scoresUnused = maxScoreActions - handsScoredThisTurn;
+        const scoreBonusDollars = scoresUnused * 1;
+        dollars += scoreBonusDollars;
+        
+        // 2. Update Poker Points
+        pokerPoints += finalTurnScore;
+        
+        // 3. Gather all cards and reshuffle deck
+        const cardsToShuffle = [...hand, ...discardPile, ...deck];
+        const totalCards = cardsToShuffle.length;
+        hand = [];
+        discardPile = [];
+        deck = cardsToShuffle; 
+        shuffleDeck(deck);
+        
+        // 4. Reset turn-specific state
+        selectedCardIds = [];
+        score = 0; 
+
+        // 5. Check for Round/Game Win Condition
+        let turnEndMessage = `**Turn Ended.** You scored **${finalTurnScore}** points. 
+            <br>You earned **$${scoreBonusDollars}** for **${scoresUnused}** unused score actions.`;
+        gameState = 'IDLE'; // Default state is IDLE after turn ends
+        
+        if (currentRound <= CUMULATIVE_GOALS.length) {
+            const currentGoal = CUMULATIVE_GOALS[currentRound - 1];
+
+            if (pokerPoints >= currentGoal) {
+                
+                // Grant Round Completion Dollar Bonus
+                const roundBonus = ROUND_BONUSES[currentRound];
+                dollars += roundBonus;
+                
+                let roundEndMessage = `**ROUND ${currentRound} GOAL MET!** You earned a bonus **$${roundBonus}**!`;
+                
+                if (currentRound === CUMULATIVE_GOALS.length) {
+                    // --- FINAL WIN CONDITION ---
+                    gameState = 'SETUP'; 
+                    messageEl.innerHTML = `🎉🎉 **MATCH WON!** 🎉🎉 Total Points: ${pokerPoints}. Total Dollars: $${dollars}. <br>${roundEndMessage}<br> Click "Start Game" to play again.`;
+                    messageEl.classList.remove('text-yellow-300', 'text-green-300', 'text-purple-300');
+                    messageEl.classList.add('text-blue-300');
+                } else {
+                    // --- GOAL MET: ENTER SHOPPING STATE ---
+                    gameState = 'SHOPPING'; 
+                    messageEl.innerHTML = `${turnEndMessage} <br>${roundEndMessage} <br>You now enter the **Shop** to spend your **$${dollars}** before advancing to Round ${currentRound + 1}.`;
+                    messageEl.classList.remove('text-yellow-300', 'text-green-300');
+                    messageEl.classList.add('text-purple-300');
+                    openShop(true);
+                }
+            } else {
+                // --- CONTINUE ROUND ---
+                const nextRoundMessage = `The deck (${totalCards} cards) was reshuffled.`;
+                messageEl.innerHTML = `${turnEndMessage} <br>**Goal check:** You need **${currentGoal - pokerPoints}** more points for Round ${currentRound}. ${nextRoundMessage} Click "Start Turn" to continue.`;
+                messageEl.classList.remove('text-yellow-300');
+                messageEl.classList.add('text-green-300');
+            }
+        } else {
+            gameState = 'SETUP'; 
+            messageEl.textContent = "The match has already concluded. Click 'Start Game' to begin a new challenge.";
+        }
+
+        renderGame();
+    }
+    
+    // --- Shop Functions ---
+
+    function openShop(isOpen) {
+        if (isOpen) {
+            shopModal.classList.add('open');
+            renderShopItems();
+        } else {
+            shopModal.classList.remove('open');
+        }
+    }
+
+    /**
+     * Renders all shop items. (UPDATED)
+     */
+    function renderShopItems() {
+        shopFundsEl.textContent = dollars;
+        shopItemsContainerEl.innerHTML = '';
+
+        for (const [key, item] of Object.entries(SHOP_ITEMS)) {
+            // Get level and bonus dynamically (Accessing 'var' declared globals via window[key])
+            const currentValue = window[item.levelKey];
+            const currentBonusValue = window[item.bonusKey].toFixed(1);
+            
+            const cost = item.costs[currentValue] || null; 
+            const maxed = currentValue >= item.limit;
+            const canAfford = cost !== null && dollars >= cost;
+            
+            let buttonText = maxed ? "MAX LEVEL" : 
+                             canAfford ? `Buy ($${cost})` : `Too Expensive ($${cost || 'MAX'})`;
+            let buttonClass = maxed ? 'bg-gray-500' : 
+                              canAfford ? 'btn-shop' : 'bg-red-700';
+
+            let titleClass = 'text-gray-300';
+            let borderColor = 'border-purple-400';
+            
+            // Set colors for the suit jokers
+            if (item.suit) {
+                 const suitInfo = Object.values(SUITS).find(s => s.jokerId === item.id);
+                 if (suitInfo) {
+                    titleClass = suitInfo.color === 'red-suit' ? 'text-red-400' : 'text-blue-400';
+                    borderColor = suitInfo.bgVar.replace('var(', '').replace(')', '');
+                 }
+            }
+
+            shopItemsContainerEl.innerHTML += `
+                <div class="shop-item flex flex-col justify-between border-2" style="border-color: ${borderColor};">
+                    <div>
+                        <h4 class="text-2xl font-bold ${titleClass}">${item.name}</h4>
+                        <p class="text-sm text-gray-400 mt-2">${item.description}</p>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-lg font-semibold text-green-400">
+                            Current Bonus: <span class="text-yellow-300">$\times${currentBonusValue}$</span>
+                        </p>
+                        <p class="text-md font-semibold text-gray-400">
+                            Level: ${currentValue} / ${item.limit}
+                        </p>
+                        <button 
+                            class="btn w-full mt-4 ${buttonClass}" 
+                            ${maxed || !canAfford ? 'disabled' : ''}
+                            onclick="buyUpgrade('${key}')"
+                        >
+                            ${buttonText}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    window.buyUpgrade = function(itemKey) {
+        const item = SHOP_ITEMS[itemKey];
+        
+        let currentLevel = window[item.levelKey];
+        const cost = item.costs[currentLevel];
+
+        if (!item || !cost) {
+            messageEl.textContent = "This item is at its maximum level or configuration error.";
+            return;
+        }
+
+        if (dollars < cost) {
+            messageEl.textContent = "Insufficient funds!";
+            return;
+        }
+        
+        // Apply upgrade 
+        dollars -= cost;
+        
+        // Update global state variables dynamically (now safe due to 'var' declaration)
+        window[item.levelKey]++;
+        window[item.bonusKey] += item.bonusPerLevel;
+        currentLevel = window[item.levelKey];
+
+        messageEl.textContent = `Successfully purchased **${item.name}** for $${cost}! New Level: ${currentLevel}. Remaining dollars: $${dollars}.`;
+
+        renderShopItems();
+        renderGame(); 
+    }
+
+    function exitShop() {
+        if (currentRound < CUMULATIVE_GOALS.length) {
+            currentRound++; 
+            
+            handsScoredThisTurn = 0; 
+            exchangesUsedThisTurn = 0; 
+            
+            gameState = 'IDLE';
+            const nextGoal = CUMULATIVE_GOALS[currentRound - 1];
+            messageEl.innerHTML = `Welcome to **Round ${currentRound}**! Your new goal is **${nextGoal}** points. You start this round with $${dollars}. Click "Start Turn" to draw your hand.`;
+        }
+        openShop(false);
+        renderGame();
+    }
+    
+    // --- Deck Viewer Functions ---
+
+    function renderDeckContents() {
+        deckViewerCountEl.textContent = deck.length;
+        deckCardContainer.innerHTML = '';
+        
+        if (deck.length === 0) {
+            deckCardContainer.innerHTML = "<p class='text-gray-500 italic text-lg p-4'>The deck is currently empty! All cards are in your hand or the discard pile.</p>";
+            return;
+        }
+        
+        // 1. Create a sortable copy of the deck
+        const sortedDeck = [...deck];
+
+        // 2. Sort the deck by Suit (descending S, H, D, C) and then Rank (descending A to 2)
+        sortedDeck.sort((a, b) => {
+            // Primary sort: Suit (High to Low: S > H > D > C)
+            if (a.suit !== b.suit) {
+                return SUIT_ORDER[b.suit] - SUIT_ORDER[a.suit]; 
+            }
+            // Secondary sort: Rank (High to Low, A=14 down to 2)
+            return b.value - a.value; 
+        });
+
+        const deckHtml = sortedDeck.map(card => {
+            const suitInfo = SUITS[card.suit];
+            return `
+                <div class="deck-card-small bg-white rounded-md shadow-sm flex flex-col items-center justify-between mx-1 my-1 border border-gray-300">
+                    <div class="rank ${suitInfo.color} text-sm leading-none">${card.rank}</div>
+                    <div class="suit ${suitInfo.color} text-xl leading-none">${suitInfo.symbol}</div>
+                </div>
+            `;
+        }).join('');
+        
+        deckCardContainer.innerHTML = deckHtml;
+    }
+
+    function toggleDeckViewer(isOpen) {
+        if (isOpen) {
+            if (gameState === 'SETUP' || gameState === 'SHOPPING') {
+                 messageEl.textContent = "Start the game first to view the deck!";
+                 return;
+            }
+            renderDeckContents();
+            deckViewerModal.classList.add('open');
+        } else {
+            deckViewerModal.classList.remove('open');
+        }
+    }
+
+
+    // --- Score Guide Functions ---
+    function populateScoreGuide() { 
+        const hands = Object.keys(POKER_SCORES);
+        let tableHTML = `
+            <table class="text-sm sm:text-base w-full">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="text-blue-300 py-2 px-4 text-left">Hand Type</th>
+                        <th class="text-blue-300 py-2 px-4">Base Chips</th>
+                        <th class="text-blue-300 py-2 px-4">Multiplier</th>
+                        <th class="text-blue-300 py-2 px-4">Example Score*</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        hands.forEach(handType => {
+            const config = POKER_SCORES[handType];
+            let baseChips = config.baseChips;
+            let exampleRankSum = (handType === 'High Card') ? 11 : 2+3+4+5+6; // Simple example sum
+            
+            const exampleChips = baseChips + exampleRankSum;
+            // Use a base multiplier of 1.0 for example score calculation
+            const minScore = Math.round(exampleChips * (config.multiplier + 1.0)); 
+
+            tableHTML += `
+                <tr class="hover:bg-gray-700 transition duration-150 border-t border-gray-700">
+                    <td class="font-bold py-2 px-4">${handType}</td>
+                    <td class="text-center py-2 px-4">${config.baseChips}</td>
+                    <td class="text-yellow-400 font-mono text-center py-2 px-4">${config.multiplier.toFixed(1)}</td>
+                    <td class="text-green-400 text-center py-2 px-4">${minScore}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+            <p class="text-xs text-gray-500 mt-2 px-3">* Example Score includes a base $\times 1.0$ Joker bonus for illustration. Rank bonus uses custom chip values: Ace=11, J/Q/K=10.</p>
+        `;
+        scoreGuideContent.innerHTML = tableHTML;
+    }
+
+    function toggleScoreGuide(isOpen) {
+        if (isOpen) {
+            scoreGuideModal.classList.add('open');
+        } else {
+            scoreGuideModal.classList.remove('open');
+        }
+    }
+
+
+    // --- Event Listeners ---
+    startGameBtn.addEventListener('click', startGame);
+    startTurnBtn.addEventListener('click', startTurn);
+    scoreHandBtn.addEventListener('click', scoreHand);
+    exchangeCardsBtn.addEventListener('click', exchangeCards);
+    endTurnBtn.addEventListener('click', endTurn);
+    exitShopBtn.addEventListener('click', exitShop); 
+    
+    // View Deck listener
+    viewDeckBtn.addEventListener('click', () => toggleDeckViewer(true));
+    
+    // Sort Hand listener
+    sortHandBtn.addEventListener('click', sortHand);
+    
+    // Modal listeners
+    scoreGuideBtn.addEventListener('click', () => toggleScoreGuide(true));
+    
+    document.querySelectorAll('[data-close-modal]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const modalId = e.target.getAttribute('data-close-modal');
+            document.getElementById(modalId).classList.remove('open');
+        });
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('open');
+            }
+        });
+    });
+
+    // Initial setup when the script loads
+    populateScoreGuide(); 
+    renderGame();
+    
+</script>
+
+</body>
+</html>
