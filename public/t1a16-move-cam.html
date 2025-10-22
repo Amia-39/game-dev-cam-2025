@@ -1,0 +1,51 @@
+<h1 align=center> t1a16-move-div-cam.html </h1>
+
+
+
+<script>
+	let myClock01
+	let myClock02
+	let myClock03
+
+	function myTest() {
+		document.getElementById('myButton').style.left =
+    parseInt(document.getElementById('myButton').style.left) + 75 + 'px'
+	}
+	
+	function myNotTest() {
+		document.getElementById('myDiv01').innerHTML = 'HEY THATS CHEATING NO KEYBOARD'
+		document.getElementById('myDiv01').style.fontSize = '100px'
+	}
+	
+	function what() {
+		document.getElementById('myDiv01').innerHTML = 'Good, no Keyboard'
+		document.getElementById('myDiv01').style.fontSize = '15px'
+	}
+	
+	function grah() {
+		document.getElementById('myDiv01').innerHTML = '<img src=https://www.portland.gov/sites/default/files/styles/2_1_800w/public/2022/stop-sign1.jpg?itok=_o-TcrNe/>'
+	}
+	
+	function Q1() {
+		document.getElementById('myDiv01').style.left =
+    parseInt(document.getElementById('myDiv01').style.left) + 10 + 'px'
+	}
+</script>
+
+<button id="myButton" style="position:relative; left:0; top:0; width:40; height:20;" 
+onmouseover="{myTest()}" 
+onfocus="{myNotTest()}"
+onblur="{what()}"
+onclick="{grah()}">test</button><br><br>
+
+<div id="myDiv01" style="position:relative; left:100; top:0; width:1000; height:20;">bwah</div><br>
+
+<button id="myButton02" onclick="{Q1()}">Test</button><br><br>
+
+<input type=button value="Walking" onclick="{
+  document.getElementById('myDiv01').style.left = '0px';
+  clearInterval(myClock01);
+  myClock01 = setInterval(function(){
+    document.getElementById('myButton02').click();
+  }, 30)
+}"><br><br>
