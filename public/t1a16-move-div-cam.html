@@ -1,7 +1,6 @@
 <h1 align=center> t1a16-move-div-cam.html </h1>
 
 
-
 <script>
 	let myClock01
 	let myClock02
@@ -9,7 +8,7 @@
 
 	function myTest() {
 		document.getElementById('myButton').style.left =
-    parseInt(document.getElementById('myButton').style.left) + 75 + 'px'
+    parseInt(document.getElementById('myButton').style.left) + 120 + 'px'
 	}
 	
 	function myNotTest() {
@@ -30,22 +29,52 @@
 		document.getElementById('myDiv01').style.left =
     parseInt(document.getElementById('myDiv01').style.left) + 10 + 'px'
 	}
+	
+	function Q2() {
+		document.getElementById('myDiv01').style.left =
+    parseInt(document.getElementById('myDiv01').style.left) + -10 + 'px'
+	}
 </script>
-
-<button id="myButton" style="position:relative; left:0; top:0; width:40; height:20;" 
-onmouseover="{myTest()}" 
-onfocus="{myNotTest()}"
-onblur="{what()}"
-onclick="{grah()}">test</button><br><br>
 
 <div id="myDiv01" style="position:relative; left:100; top:0; width:1000; height:20;">bwah</div><br>
 
-<button id="myButton02" onclick="{Q1()}">Test</button><br><br>
+<button id="myButton" style="position:relative; left:0; top:0; width:95; height:20;" 
+onmouseover="{myTest()}" 
+onfocus="{myNotTest()}"
+onblur="{what()}"
+onclick="{grah()}">Do Not Click</button><br><br>
 
-<input type=button value="Walking" onclick="{
-  document.getElementById('myDiv01').style.left = '0px';
+<button id="myButton02" onclick="{Q1()}">Div Right</button><br><br>
+
+<input type=button value="Div Right Auto" onclick="{
   clearInterval(myClock01);
   myClock01 = setInterval(function(){
     document.getElementById('myButton02').click();
+  }, 30)
+}"><br><br>
+
+<input type=button id="myButton06" value="Div Down" onclick="{
+  document.getElementById('myDiv01').style.top =
+    parseInt(document.getElementById('myDiv01').style.top) + 1 + 'px'
+}"><br><br>
+
+<input type=button value="Div Down Auto" onclick="{
+  clearInterval(myClock02);
+  myClock02 = setInterval(function(){
+    document.getElementById('myButton06').click();
+  }, 30)
+}"><br><br>
+
+<input type=button id="myButton05" value="Div Up" onclick="{
+  document.getElementById('myDiv01').style.top =
+    parseInt(document.getElementById('myDiv01').style.top) + -1 + 'px'
+}"><br><br>
+
+<button id="myButton04" onclick="{Q2()}">Div Left</button><br><br>
+
+<input type=button value="Div Left Auto" onclick="{
+  clearInterval(myClock01);
+  myClock01 = setInterval(function(){
+    document.getElementById('myButton04').click();
   }, 30)
 }"><br><br>
