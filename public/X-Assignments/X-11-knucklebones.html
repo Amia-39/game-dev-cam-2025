@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knucklebones</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .rules {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .scores {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .score-box {
+            flex: 1;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .score-box.active {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .score-box.inactive {
+            background: #f0f0f0;
+            color: #999;
+        }
+
+        .score-label {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .boards {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .column {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 8px;
+            min-height: 240px;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .board.player .column:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+            cursor: pointer;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            animation: placeCell 0.3s ease;
+        }
+
+        @keyframes placeCell {
+            from {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        .dice-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .current-dice {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 4px solid #667eea;
+            border-radius: 12px;
+            font-size: 3em;
+            line-height: 72px;
+            font-weight: bold;
+            color: #667eea;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .roll-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .roll-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .roll-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .reset-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #ee5a52;
+            transform: translateY(-2px);
+        }
+
+        .game-over {
+            text-align: center;
+            padding: 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            display: none;
+        }
+
+        .game-over.show {
+            display: block;
+        }
+
+        .board-label {
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎲 Knucklebones 🎲</h1>
+        <div class="rules">
+            Roll dice and place them in columns. Same numbers multiply! Opponent's matching dice get destroyed!
+        </div>
+
+        <div class="scores">
+            <div class="score-box" id="player-score-box">
+                <div class="score-label">Your Score</div>
+                <div class="score-value" id="player-score">0</div>
+            </div>
+            <div class="score-box" id="ai-score-box">
+                <div class="score-label">AI Score</div>
+                <div class="score-value" id="ai-score">0</div>
+            </div>
+        </div>
+
+        <div class="game-over" id="game-over"></div>
+
+        <div class="dice-display">
+            <div class="current-dice" id="current-dice">?</div>
+        </div>
+
+        <div class="boards">
+            <div>
+                <div class="board-label">Your Board</div>
+                <div class="board player" id="player-board"></div>
+            </div>
+            <div>
+                <div class="board-label">AI Board</div>
+                <div class="board ai" id="ai-board"></div>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button class="roll-btn" id="roll-btn" onclick="rollDice()">Roll Dice</button>
+            <button class="reset-btn" onclick="resetGame()">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        let playerBoard = [[],[],[]], aiBoard = [[],[],[]];
+        let currentDice = null;
+        let currentPlayer = 'player';
+        let gameOver = false;
+
+        function initBoards() {
+            const playerBoardEl = document.getElementById('player-board');
+            const aiBoardEl = document.getElementById('ai-board');
+            
+            playerBoardEl.innerHTML = '';
+            aiBoardEl.innerHTML = '';
+            
+            for (let i = 0; i < 3; i++) {
+                const playerCol = document.createElement('div');
+                playerCol.className = 'column';
+                playerCol.dataset.col = i;
+                playerCol.onclick = () => placeInColumn(i);
+                playerBoardEl.appendChild(playerCol);
+                
+                const aiCol = document.createElement('div');
+                aiCol.className = 'column';
+                aiBoardEl.appendChild(aiCol);
+            }
+            
+            updateDisplay();
+        }
+
+        function rollDice() {
+            if (gameOver) return;
+            currentDice = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('current-dice').textContent = currentDice;
+            document.getElementById('roll-btn').disabled = true;
+        }
+
+        function placeInColumn(col) {
+            if (!currentDice || gameOver || currentPlayer !== 'player' || playerBoard[col].length >= 3) return;
+            
+            playerBoard[col].push(currentDice);
+            destroyOpponentDice(col, currentDice, 'ai');
+            currentDice = null;
+            document.getElementById('current-dice').textContent = '?';
+            updateDisplay();
+            
+            if (checkGameOver()) {
+                endGame();
+                return;
+            }
+            
+            currentPlayer = 'ai';
+            updateTurnDisplay();
+            setTimeout(aiTurn, 800);
+        }
+
+        function destroyOpponentDice(col, value, board) {
+            const targetBoard = board === 'ai' ? aiBoard : playerBoard;
+            targetBoard[col] = targetBoard[col].filter(v => v !== value);
+        }
+
+        function aiTurn() {
+            if (gameOver) return;
+            
+            const dice = Math.floor(Math.random() * 6) + 1;
+            
+            let bestCol = -1;
+            let bestScore = -1;
+            
+            for (let i = 0; i < 3; i++) {
+                if (aiBoard[i].length < 3) {
+                    let score = 0;
+                    
+                    const count = aiBoard[i].filter(v => v === dice).length;
+                    score += dice * Math.pow(count + 1, 2);
+                    
+                    const playerDestroyed = playerBoard[i].filter(v => v === dice).length;
+                    score += playerDestroyed * 10;
+                    
+                    score += Math.random() * 5;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestCol = i;
+                    }
+                }
+            }
+            
+            if (bestCol !== -1) {
+                aiBoard[bestCol].push(dice);
+                destroyOpponentDice(bestCol, dice, 'player');
+            }
+            
+            updateDisplay();
+            
+            if (checkGameOver()) {
+                endGame();
+                return;
+            }
+            
+            currentPlayer = 'player';
+            updateTurnDisplay();
+            document.getElementById('roll-btn').disabled = false;
+        }
+
+        function calculateScore(board) {
+            let total = 0;
+            for (let col of board) {
+                const counts = {};
+                for (let val of col) {
+                    counts[val] = (counts[val] || 0) + 1;
+                }
+                for (let val in counts) {
+                    total += val * Math.pow(counts[val], 2);
+                }
+            }
+            return total;
+        }
+
+        function updateDisplay() {
+            const playerBoardEl = document.getElementById('player-board');
+            const aiBoardEl = document.getElementById('ai-board');
+            
+            for (let i = 0; i < 3; i++) {
+                const playerCol = playerBoardEl.children[i];
+                const aiCol = aiBoardEl.children[i];
+                
+                playerCol.innerHTML = '';
+                aiCol.innerHTML = '';
+                
+                for (let val of playerBoard[i]) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = val;
+                    playerCol.appendChild(cell);
+                }
+                
+                for (let val of aiBoard[i]) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = val;
+                    aiCol.appendChild(cell);
+                }
+            }
+            
+            document.getElementById('player-score').textContent = calculateScore(playerBoard);
+            document.getElementById('ai-score').textContent = calculateScore(aiBoard);
+        }
+
+        function updateTurnDisplay() {
+            const playerBox = document.getElementById('player-score-box');
+            const aiBox = document.getElementById('ai-score-box');
+            
+            if (currentPlayer === 'player') {
+                playerBox.className = 'score-box active';
+                aiBox.className = 'score-box inactive';
+            } else {
+                playerBox.className = 'score-box inactive';
+                aiBox.className = 'score-box active';
+            }
+        }
+
+        function checkGameOver() {
+            const playerFull = playerBoard.every(col => col.length === 3);
+            const aiFull = aiBoard.every(col => col.length === 3);
+            return playerFull || aiFull;
+        }
+
+        function endGame() {
+            gameOver = true;
+            const playerScore = calculateScore(playerBoard);
+            const aiScore = calculateScore(aiBoard);
+            
+            const gameOverEl = document.getElementById('game-over');
+            if (playerScore > aiScore) {
+                gameOverEl.textContent = '🎉 You Win! 🎉';
+            } else if (aiScore > playerScore) {
+                gameOverEl.textContent = '😔 AI Wins! Try Again!';
+            } else {
+                gameOverEl.textContent = '🤝 It\'s a Tie!';
+            }
+            gameOverEl.classList.add('show');
+            document.getElementById('roll-btn').disabled = true;
+        }
+
+        function resetGame() {
+            playerBoard = [[],[],[]];
+            aiBoard = [[],[],[]];
+            currentDice = null;
+            currentPlayer = 'player';
+            gameOver = false;
+            document.getElementById('current-dice').textContent = '?';
+            document.getElementById('game-over').classList.remove('show');
+            document.getElementById('roll-btn').disabled = false;
+            initBoards();
+            updateTurnDisplay();
+        }
+
+        initBoards();
+        updateTurnDisplay();
+    </script>
+</body>
+</html>
