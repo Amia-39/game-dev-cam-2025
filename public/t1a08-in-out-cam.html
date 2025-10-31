@@ -90,3 +90,38 @@
 
 <input type=button value="Division" onclick="{myFunny04()}"><br><br>
 
+<script>
+	function myFunny05() {
+		let myInput = document.getElementById('txtIn').value
+		let myOut = document.getElementById('myOutput')
+		let mySome = ''
+			if (myInput == 'Red') {
+				mySome = 'Cool'
+			} else if (myInput === 'Orange') {
+				mySome = 'Okay'
+			} else {
+				mySome = 'Pick a Colour'
+			}
+			
+			myOut.innerHTML = mySome
+		
+	}
+</script>
+
+
+
+<input type=text id="txtIn"><br>
+<select type=button value="Submit" onclick="{myFunny05()}">
+	<option value="Red"></option>
+	<option value="Orange"></option>
+	<option value="Yellow"></option>
+	<option value="Green"></option>
+	<option value="Blue"></option>
+	<option value="Purple"></option>
+	<option value="Pink"></option>
+	<option value="Black"></option>
+	<option value="White"></option>
+	<option value="Grey"></option>
+</select>
+<div id="myOutput">...</div>
+
