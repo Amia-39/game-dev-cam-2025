@@ -96,9 +96,27 @@
 		let myOut = document.getElementById('myOutput')
 		let mySome = ''
 			if (myInput == 'Red') {
-				mySome = 'Cool'
+				mySome = 'I Too Like Blood'
 			} else if (myInput === 'Orange') {
-				mySome = 'Okay'
+				mySome = 'One Of The Better Fruits'
+			} else if (myInput === 'Yellow') {
+				mySome = 'You Get Lemonade'
+			} else if (myInput === 'Green') {
+				mySome = 'The Better Apples (Fight Me)'
+			} else if (myInput === 'Blue') {
+				mySome = 'Common'
+			} else if (myInput === 'Purple') {
+				mySome = 'Hey Thats One of my Favourites'
+			} else if (myInput === 'Pink') {
+				mySome = 'I Like That One A Lot'
+			} else if (myInput === 'Black') {
+				mySome = 'Literally All I Wear'
+			} else if (myInput === 'White') {
+				mySome = 'So Every Colour Then'
+			} else if (myInput === 'Grey') {
+				mySome = 'Why?'
+			} else if (myInput === 'Something Else') {
+				mySome = 'Its Either A Gradient Or Specific Hex Code. That Means It Must Be Great'
 			} else {
 				mySome = 'Pick a Colour'
 			}
@@ -111,16 +129,18 @@
 
 
 <select id="Colour Picker" type=button value="Submit" onclick="{myFunny05()}">
-	<option value="Red"></option>
-	<option value="Orange"></option>
-	<option value="Yellow"></option>
-	<option value="Green"></option>
-	<option value="Blue"></option>
-	<option value="Purple"></option>
-	<option value="Pink"></option>
-	<option value="Black"></option>
-	<option value="White"></option>
-	<option value="Grey"></option>
+	<option value="Pick A Colour">Pick A Colour</option>
+	<option value="Red">Red</option>
+	<option value="Orange">Orange</option>
+	<option value="Yellow">Yellow</option>
+	<option value="Green">Green</option>
+	<option value="Blue">Blue</option>
+	<option value="Purple">Purple</option>
+	<option value="Pink">Pink</option>
+	<option value="Black">Black</option>
+	<option value="White">White</option>
+	<option value="Grey">Grey</option>
+	<option value="Something Else">Something Else</option>
 </select>
 <div id="myOutput">...</div>
 
