@@ -1,0 +1,54 @@
+    <h1>t2a18-javascript-loops-cam.html</h1>
+
+        <div><h2>1. `for`</h2>
+            <pre><code>for (let i = 0; i < 5; i++) { output(i); }</code></pre>
+            <button onclick="runLoop('for')">Run</button>
+            <label>Output:</label><pre id="output-for">Click Run.</pre>
+        </div>
+
+        <div><h2>2. `while`</h2>
+            <pre><code>let c=0; while (c < 4) { output(c); c++; }</code></pre>
+            <button onclick="runLoop('while')">Run</button>
+            <label>Output:</label><pre id="output-while">Click Run.</pre>
+        </div>
+
+        <div><h2>3. `do...while`</h2>
+            <pre><code>let i=10, r=0; do { output("Ran once: "+r); r++; } while (i < 10);</code></pre>
+            <button onclick="runLoop('do-while')">Run</button>
+            <label>Output:</label><pre id="output-do-while">Click Run.</pre>
+        </div>
+
+        <div><h2>4. `for...in`</h2>
+            <pre><code>const b={t:"Manual",a:"J. S."}; for (const k in b) { output(k + ": " + b[k]); }</code></pre>
+            <button onclick="runLoop('for-in')">Run</button>
+            <label>Output:</label><pre id="output-for-in">Click Run.</pre>
+        </div>
+
+        <div><h2>5. `for...of`</h2>
+            <pre><code>const p=[2,3,5,7]; for (const n of p) { output(`Prime: ${n}`); }</code></pre>
+            <button onclick="runLoop('for-of')">Run</button>
+            <label>Output:</label><pre id="output-for-of">Click Run.</pre>
+        </div>
+
+    <script>
+        function runLoop(type) {
+            let out = '';
+            const output = (msg) => { out += msg + '\n'; };
+            
+            switch (type) {
+                case 'for': for (let i = 0; i < 5; i++) { output(`Index: ${i}`); } break;
+                case 'while': let c=0; while (c < 4) { output(`Count: ${c}`); c++; } break;
+                case 'do-while': let i=10, r=0; do { output(`Ran once: ${r}`); r++; } while (i < 10); break;
+                case 'for-in': const b={t:"Manual",a:"J. S."}; for (const k in b) { if (b.hasOwnProperty(k)) output(`${k}: ${b[k]}`); } break;
+                case 'for-of': const p=[2,3,5,7]; output("Values:"); for (const n of p) { output(`Prime: ${n}`); } break;
+            }
+
+            document.getElementById(`output-${type}`).textContent = out.trim();
+        }
+
+        window.onload = () => {
+            ['for', 'while', 'do-while', 'do-while', 'for-in', 'for-of'].forEach(id => {
+                document.getElementById(`output-${id}`).textContent = 'Click Run.';
+            });
+        };
+    </script>
