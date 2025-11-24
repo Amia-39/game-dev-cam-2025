@@ -1,25 +1,150 @@
 <h1 align=center>t2a22-json-cam.html</h1>
 
 <script>
-	async function fetchData(url){
-		const response = await fetch(url)
-		const data = await response.json()
-		console.log(data)
-		
-		const myJson = JSON.stringify(data, null, 3)
-		document.getElementById('myDiv01').innerHTML = `<pre>${myJson}</pre>`
-		
-		if (data.image) {document.getElementById('myDiv01').innerHTML += `<img src="${data.image}" alt="Random Image" style="max-width: 100%; height: auto;">`}
-		if (data.link) {document.getElementById('myDiv01').innerHTML += `<div><a href="${data.link}">${data.link}</a></div>`}
-		if (data.text) {document.getElementById('myDiv01').innerHTML += `<p>${data.text}</p>`}
-	}
+async function fetchData(url) {
+    if (!url) return;
+
+    const response = await fetch(url);
+    let data;
+
+    try {
+        data = await response.clone().json();
+    } catch {
+        const text = await response.text();
+        data = { text: text.trim() };
+    }
+
+    if (Array.isArray(data)) data = data[0];
+
+    const div = document.getElementById("myDiv01");
+    div.innerHTML = ""; 
+
+
+    // Helper: add JSON below formatted content
+    function showJSON() {
+        div.innerHTML += `
+            <pre style="margin-top:15px; border-top:1px solid #ccc; padding-top:10px;">
+${JSON.stringify(data, null, 3)}
+            </pre>
+        `;
+    }
+
+
+    // ⭐ RANDOM USER — profile card + JSON
+    if (data.name && data.picture) {
+        div.innerHTML = `
+            <div style="border:1px solid #ccc; padding:10px; border-radius:10px; max-width:250px;">
+                <img src="${data.picture.large}" style="width:100%; border-radius:10px;">
+                <h3>${data.name.first} ${data.name.last}</h3>
+                <p>Email: ${data.email}</p>
+                <p>Country: ${data.location.country}</p>
+            </div>
+        `;
+        showJSON();
+        return;
+    }
+
+    // ⭐ TRIVIA — formatted question + answers + JSON
+    if (data.results) {
+        const q = data.results[0];
+        const answers = [...q.incorrect_answers, q.correct_answer]
+            .sort(() => Math.random() - 0.5);
+
+        div.innerHTML = `
+            <div style="border:1px solid #ccc; padding:10px; border-radius:10px;">
+                <h3>${q.question}</h3>
+                ${answers.map(a => `
+                    <button onclick="this.style.backgroundColor='${a === q.correct_answer ? '#8f8' : '#f88'}'">
+                        ${a}
+                    </button><br><br>
+                `).join("")}
+            </div>
+        `;
+        showJSON();
+        return;
+    }
+
+    // ⭐ JOKE — setup/punchline + JSON
+    if (data.setup && data.punchline) {
+        div.innerHTML = `
+            <div style="border:1px solid #ccc; padding:10px; border-radius:10px;">
+                <h3>${data.setup}</h3>
+                <button onclick="this.nextElementSibling.style.display='block'; this.remove();">
+                    Reveal Punchline
+                </button>
+                <p style="display:none; font-weight:bold;">${data.punchline}</p>
+            </div>
+        `;
+        showJSON();
+        return;
+    }
+
+    // ⭐ SIMPLE TEXT APIS — formatted text + JSON
+    if (data.data || data.meow || data.text || data.slip) {
+        const text =
+            data.data ||
+            data.meow ||
+            data.text ||
+            (data.slip ? data.slip.advice : "");
+
+        div.innerHTML = `
+            <div style="border:1px solid #ccc; padding:10px; border-radius:10px;">
+                <p>${text}</p>
+            </div>
+        `;
+        showJSON();
+        return;
+    }
+
+
+    // -----------------------------
+    // ⭐ FALLBACK (generic behavior)
+    // -----------------------------
+    const myJson = JSON.stringify(data, null, 3);
+    div.innerHTML = `<pre>${myJson}</pre>`;
+
+    // Auto-detect images
+    for (const key in data) {
+        if (typeof data[key] === "string" && data[key].match(/\.(jpg|jpeg|png|gif)$/i)) {
+            div.innerHTML += `<img src="${data[key]}" style="max-width:100%; height:auto;">`;
+        }
+    }
+
+    // Auto-detect links
+    for (const key in data) {
+        if (typeof data[key] === "string" && data[key].startsWith("http")) {
+            div.innerHTML += `<div><a href="${data[key]}" target="_blank">${data[key]}</a></div>`;
+        }
+    }
+
+    // Auto-detect plain text
+    for (const key in data) {
+        const val = data[key];
+        if (typeof val === "string") {
+            const isImage = val.match(/\.(jpg|jpeg|png|gif)$/i);
+            const isLink = val.startsWith("http");
+            if (!isImage && !isLink) {
+                div.innerHTML += `<p>${val}</p>`;
+            }
+        }
+    }
+}
 </script>
+
+
 
 <select id="mySelect" size="1" onchange="fetchData(this.value)">
 	<option>blank</option>
 	<option value="https://randomfox.ca/floof/">Random Fox</option>
-	<option value=""></option>
+    <option value="https://dog.ceo/api/breeds/image/random">Random Dog</option>
+    <option value="https://api.thecatapi.com/v1/images/search">Random Cat</option>
+    <option value="https://api.adviceslip.com/advice">Random Advice</option>
+    <option value="https://opentdb.com/api.php?amount=1&type=multiple">Trivia Question</option>
+    <option value="https://official-joke-api.appspot.com/random_joke">Random Joke</option>
+    <option value="https://meowfacts.herokuapp.com/">Random Cat Fact</option>
+    <option value="https://uselessfacts.jsph.pl/random.json?language=en">Random Useless Fact</option>
+    <option value="https://api.ipify.org?format=json">Your Public IP</option>
+	<option value="https://v2.jokeapi.dev/joke/Any">Joke API (Multi-Type)</option>
 </select><br><br>
 
 <div id="myDiv01">...</div>
-<div id="myDiv02">...</div>
