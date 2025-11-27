@@ -1,6 +1,6 @@
 RECIPIES
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Chocolate Raspberry Brownies
 
@@ -38,7 +38,7 @@ Cool before slicing into squares. Store in an airtight container for up to 3 day
          "strYoutube": "https://www.youtube.com/watch?v=Pi89PqsAaAg",
 
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
          Lasagna Sandwiches
 
@@ -71,7 +71,7 @@ Toast sandwiches until lightly browned on both sides and cheese is melted, addin
          "strMeasure9": "2 1/2 Tbs",
 
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
          Grilled Mac and Cheese Sandwich
 
@@ -92,7 +92,11 @@ Refrigerate until cool and firm, about 1 hour. Make the grilled cheese. Heat a l
 In a small bowl, stir together the 4 tablespoons (55 grams) butter and garlic powder until well blended. Remove the mac and cheese from the refrigerator and peel off the top layer of parchment paper.
 Carefully cut into 8 equal pieces. Each piece will make 1 grilled mac and cheese sandwich.
 (You can stash each individual portion in a double layer of resealable plastic bags and refrigerate for up to 3 days or freeze it for up to 1 month.)
-Spread 3/4 teaspoon garlic butter on one side of each bread slice. Place half of the slices, buttered-side down, on a clean cutting board. Top each with one slice of Cheddar, then 1 piece of the mac and cheese. (Transfer from the baking sheet by scooting your hand or a spatula under each piece of mac and cheese and then flipping it over onto a sandwich.) Place 1 slice of Jack on top of each. Finish with the remaining bread slices, buttered-side up.\r\n10. Using a wide spatula, place as many sandwiches in the pan as will fit without crowding it. Cover and cook until the bottoms are nicely browned, about 4 minutes. Turn and cook until the second sides are browned, the cheese is melted, and the mac and cheese is heated through, about 4 minutes more.\r\n11. Repeat with the remaining ingredients. Cut the sandwiches in half, if desired, and serve.",
+Spread 3/4 teaspoon garlic butter on one side of each bread slice. Place half of the slices, buttered-side down, on a clean cutting board. Top each with one slice of Cheddar, then 1 piece of the mac and cheese.
+(Transfer from the baking sheet by scooting your hand or a spatula under each piece of mac and cheese and then flipping it over onto a sandwich.)
+Place 1 slice of Jack on top of each. Finish with the remaining bread slices, buttered-side up. Using a wide spatula, place as many sandwiches in the pan as will fit without crowding it.
+Cover and cook until the bottoms are nicely browned, about 4 minutes. Turn and cook until the second sides are browned, the cheese is melted, and the mac and cheese is heated through, about 4 minutes more.
+Repeat with the remaining ingredients. Cut the sandwiches in half, if desired, and serve.",
 
 
 
@@ -134,4 +138,4 @@ Spread 3/4 teaspoon garlic butter on one side of each bread slice. Place half of
          "strMeasure17": "4 tablespoons (55 grams)",
 
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
