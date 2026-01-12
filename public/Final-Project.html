@@ -172,6 +172,18 @@
     100% { transform: translateX(0); }
 }
 
+#eventContainer {
+    background: #111;
+    border: 2px solid #888;
+    padding: 16px;
+    margin: 12px auto;
+    max-width: 400px;
+    text-align: center;
+}
+#eventContainer button {
+    margin: 6px;
+}
+
         
     </style>
 </head>
@@ -262,6 +274,9 @@
             </button>
         </footer>
     </div>
+	
+	<div id="eventContainer" style="display:none;" class="panel"></div>
+
 
     <!-- Upgrade Panel Modal (Post-Combat Rewards) -->
     <div id="upgrade-panel-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
@@ -296,7 +311,7 @@
             </div>
         </div>
     </div>
-
+	
     <!-- Deck View Modal (Draw Pile) -->
     <div id="deck-view-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
         <div class="bg-gray-800 p-6 rounded-lg shadow-2xl w-full max-w-5xl h-[80vh] flex flex-col border-4 border-gray-600">
@@ -322,6 +337,15 @@
             </button>
         </div>
     </div>
+	
+	<div id="event-modal" class="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 hidden">
+		<div class="bg-gray-800 p-8 rounded-lg w-full max-w-2xl border-4 border-purple-500 text-center">
+			<h2 id="event-title" class="text-3xl font-black text-purple-400 mb-4"></h2>
+			<p id="event-description" class="text-lg text-gray-300 mb-6"></p>
+			<div id="event-choices" class="flex justify-center gap-4"></div>
+		</div>
+	</div>
+
 
 
     <!-- Modal for Game Over/Win (Existing) -->
@@ -340,53 +364,79 @@
         // --- STAGE CONFIGURATION ---
         const STAGE_CONFIG = [
             // --- Low Difficulty (Stages 1-3) ---
-            { id: 1, name: "The Grassy Fields", difficulty: "low", isBoss: false, enemyType: "Goblins", encounter: "random" },
-            { id: 2, name: "The Shady Woods", difficulty: "low", isBoss: false, enemyType: "Bugs", encounter: "random" },
-            { id: 3, name: "The Forgotten Path", difficulty: "low", isBoss: false, enemyType: "Skeletons", encounter: "random" },
+            { id: 1, name: "The Grassy Fields", difficulty: "low", isBoss: false, enemyType: "Goblins", encounters: "random" },
+            { id: 2, name: "The Shady Woods", difficulty: "low", isBoss: false, enemyType: "Bugs", encounters: "random" },
+            { id: 3, name: "The Forgotten Path", difficulty: "low", isBoss: false, enemyType: "Skeletons", encounters: "random" },
 
             // --- Medium Difficulty (Stages 4-5) ---
-            { id: 4, name: "The Dusty Catacombs", difficulty: "medium", isBoss: false, enemyType: "Ghosts", encounter: "random" },
-            { id: 5, name: "The Scorched Trail", difficulty: "medium", isBoss: false, enemyType: "Fire Imps", encounter: "random" },
+            { id: 4, name: "The Dusty Catacombs", difficulty: "medium", isBoss: false, enemyType: "Ghosts", encounters: "random" },
+            { id: 5, name: "The Scorched Trail", difficulty: "medium", isBoss: false, enemyType: "Fire Imps", encounters: "random" },
 
             // --- High Difficulty (Stages 6-7) ---
-            { id: 6, name: "The Crystal Peaks", difficulty: "high", isBoss: false, enemyType: "Golems", encounter: "random" },
-            { id: 7, name: "The Shadow Corridor", difficulty: "high", isBoss: false, enemyType: "Dark Knights", encounter: "random" },
+            { id: 6, name: "The Crystal Peaks", difficulty: "high", isBoss: false, enemyType: "Golems", encounters: "random" },
+            { id: 7, name: "The Shadow Corridor", difficulty: "high", isBoss: false, enemyType: "Dark Knights", encounters: "random" },
 
             // --- Boss Stage (Stage 8) ---
             { id: 8, name: "The Slime King's Chamber", difficulty: "boss", isBoss: true, enemyType: "Slime Boss" },
         ];
 		
-		const ENCOUNTER_TYPES = [
+		const ENCOUNTER_TYPES = {
 			COMBAT: 'combat',
 			EVENT: 'event',
 			SHOP: 'shop',
 			ELITE: 'elite',
 			BOSS: 'boss'
+		};
+		
+		const EVENTS = [
+			{
+				name: "Mysterious Shrine",
+				description: "A strange shrine hums with power.",
+				choices: [
+					{
+						text: "Pray (+10 HP)",
+						effect: (game) => {
+							game.state.player.currentHp = Math.min(
+								game.state.player.maxHp,
+								game.state.player.currentHp + 10
+							);
+						}
+					},
+					{
+						text: "Desecrate (+1 Max Energy, lose 30 HP)",
+						effect: (game) => {
+							game.state.player.maxEnergy += 1;
+							game.state.player.currentHp -= 30;
+						}
+					}
+				]
+			}
 		];
+
 
         
         // --- Enemy Definitions (Categorized by difficulty) ---
         const ENEMY_POOLS = {
             'low': [
                 // Low HP, low to medium damage
-                { name: 'Weak Slime', maxHp: 30, currentHp: 30, baseDamage: 4, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' },
-                { name: 'Frail Cultist', maxHp: 40, currentHp: 40, baseDamage: 6, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' },
-                { name: 'Swift Bat', maxHp: 25, currentHp: 25, baseDamage: 9, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' }, // High damage, very low HP
+                { name: 'Weak Slime', maxHp: 30, currentHp: 30, baseDamage: 4, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' },
+                { name: 'Frail Cultist', maxHp: 40, currentHp: 40, baseDamage: 6, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' },
+                { name: 'Swift Bat', maxHp: 25, currentHp: 25, baseDamage: 9, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' }, // High damage, very low HP
             ],
             'medium': [
                 // Balanced stats
-                { name: 'Angry Goblin', maxHp: 50, currentHp: 50, baseDamage: 8, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' },
-                { name: 'Vicious Wolf', maxHp: 60, currentHp: 60, baseDamage: 7, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' },
-                { name: 'Armored Guard', maxHp: 55, currentHp: 55, baseDamage: 5, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' }, // Lower damage, higher HP
+                { name: 'Angry Goblin', maxHp: 50, currentHp: 50, baseDamage: 8, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' },
+                { name: 'Vicious Wolf', maxHp: 60, currentHp: 60, baseDamage: 7, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' },
+                { name: 'Armored Guard', maxHp: 55, currentHp: 55, baseDamage: 5, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' }, // Lower damage, higher HP
             ],
             'high': [
                 // High stats or specialized threat
-                { name: 'Stone Golem', maxHp: 70, currentHp: 70, baseDamage: 6, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' },
-                { name: 'Shadow Walker', maxHp: 45, currentHp: 45, baseDamage: 10, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' }, // High damage, low HP (glass cannon)
+                { name: 'Stone Golem', maxHp: 70, currentHp: 70, baseDamage: 6, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' },
+                { name: 'Shadow Walker', maxHp: 45, currentHp: 45, baseDamage: 10, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' }, // High damage, low HP (glass cannon)
             ],
             'boss': [
                 // Final Boss
-                { name: 'Slime Boss', maxHp: 120, currentHp: 120, baseDamage: 12, intent: 'Attack', vulnerable: 0, image: 'assets/images/.png' },
+                { name: 'Slime Boss', maxHp: 120, currentHp: 120, baseDamage: 12, intent: 'Attack', vulnerable: 0, image: 'assets/images/testImage.png' },
             ]
         };
 
@@ -560,6 +610,11 @@
             enemyIntentText: document.getElementById('enemy-intent-text'),
 			enemyImage: document.getElementById('enemy-image'),
 			playerImage: document.getElementById('player-image'),
+			eventModal: document.getElementById('event-modal'),
+			eventTitle: document.getElementById('event-title'),
+			eventDescription: document.getElementById('event-description'),
+			eventChoices: document.getElementById('event-choices'),
+
             
             // Upgrade Panel elements
             upgradePanelModal: document.getElementById('upgrade-panel-modal'),
@@ -599,6 +654,83 @@
                 elements.combatLog.prepend(logEntry); // Add to top
                 elements.combatLog.scrollTop = 0; // Scroll to top
             },
+			
+			rollEncounter(stageData) {
+				if (stageData.isBoss) return ENCOUNTER_TYPES.BOSS;
+
+				const roll = Math.random();
+
+				if (roll < 0.15) return ENCOUNTER_TYPES.EVENT;   // 15%
+				if (roll < 0.25) return ENCOUNTER_TYPES.SHOP;    // 10%
+				if (roll < 0.35) return ENCOUNTER_TYPES.ELITE;   // 10%
+
+				return ENCOUNTER_TYPES.COMBAT;                   // 65%
+			},
+			
+			showGlobalEvent() {
+				const event = EVENTS[Math.floor(Math.random() * GLOBAL_EVENTS.length)];
+				this.openEvent(event);
+
+				elements.eventTitle.textContent = event.name;
+				elements.eventDescription.textContent = event.description;
+				elements.eventChoices.innerHTML = '';
+
+				event.choices.forEach(choice => {
+					const btn = document.createElement('button');
+					btn.className = 'px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold';
+					btn.textContent = choice.text;
+					btn.onclick = () => {
+						choice.effect(this);
+						elements.eventModal.classList.add('hidden');
+						this.showEnemyChoice();
+						this.updateUI();
+					};
+					elements.eventChoices.appendChild(btn);
+				});
+
+				elements.eventModal.classList.remove('hidden');
+			},
+			
+			openEvent(event) {
+				const container = document.getElementById("eventContainer");
+
+				if (!container) {
+					console.warn("Event container missing:", event.name);
+					event.choices[0].effect(this);
+					this.showEnemyChoice();
+					return;
+				}
+
+				container.innerHTML = "";
+				container.style.display = "block";
+
+				const title = document.createElement("h2");
+				title.textContent = event.name;
+
+				const desc = document.createElement("p");
+				desc.textContent = event.description;
+
+				container.appendChild(title);
+				container.appendChild(desc);
+
+				event.choices.forEach(choice => {
+					const btn = document.createElement("button");
+					btn.textContent = choice.text;
+
+					btn.onclick = () => {
+						choice.effect(this);
+						container.style.display = "none";
+						this.updateUI();
+						this.showEnemyChoice();
+					};
+
+					container.appendChild(btn);
+				});
+			},
+
+
+
+
 
             // Utility to shuffle an array (Fisher-Yates)
             shuffle(array) {
@@ -691,6 +823,22 @@
                     elements.handContainer.appendChild(this.createCardElement(card, index, 'hand'));
                 });
             },
+			
+			showShop() {
+				console.log("Shop encounter (not implemented yet)");
+				this.showEnemyChoice();
+			},
+
+			showGlobalEvent() {
+				console.log("Event encounter (not implemented yet)");
+				this.showEnemyChoice();
+			},
+
+			showEliteChoice() {
+				console.log("Elite encounter (not implemented yet)");
+				this.showEnemyChoice();
+			},
+
 
             // Update all UI elements (stats, counts)
             updateUI() {
@@ -1002,15 +1150,27 @@
 
             // Close the upgrade panel and proceed to enemy choice
             closeUpgradePanel() {
-                elements.upgradePanelModal.classList.add('hidden');
-                // Increment the stage counter *before* showing the next enemy choice
-                this.state.currentStage += 1; 
-                if (this.state.currentStage > this.state.targetVictories) {
-                     this.endGame(true); // Should already be caught in startNextStage, but good safety check
-                } else {
-                    this.showEnemyChoice(); 
-                }
-            },
+				elements.upgradePanelModal.classList.add('hidden');
+				this.state.currentStage += 1;
+
+				const stageData = STAGE_CONFIG.find(s => s.id === this.state.currentStage);
+				const encounter = this.rollEncounter(stageData);
+
+				switch (encounter) {
+					case ENCOUNTER_TYPES.EVENT:
+						this.showGlobalEvent();
+						break;
+					case ENCOUNTER_TYPES.SHOP:
+						this.showShop();
+						break;
+					case ENCOUNTER_TYPES.ELITE:
+						this.showEliteChoice();
+						break;
+					default:
+						this.showEnemyChoice();
+				}
+			},
+
             
             // --- Enemy Choice Functions ---
 
@@ -1166,14 +1326,30 @@
                 this.state.discard = [];
                 
                 // Reset enemy state for the next fight
-                this.state.enemy = { name: 'Awaiting Opponent', maxHp: 1, currentHp: 1, baseDamage: 0, intent: 'Unknown', vulnerable: 0 };
+                this.state.enemy = { name: 'Awaiting Opponent', maxHp: 1, currentHp: 1, baseDamage: 0, intent: 'Unknown', vulnerable: 0, image: '' };
 
                 elements.combatLog.innerHTML = `<h3 class="text-md font-bold mb-1 border-b border-gray-600 pb-1">Combat Log</h3>`;
 
                 this.initializeDeck();
                 
                 // Start by showing the enemy choice for Stage 1
-                this.showEnemyChoice();
+				const stageData = STAGE_CONFIG.find(s => s.id === this.state.currentStage);
+				const encounter = this.rollEncounter(stageData);
+
+				switch (encounter) {
+					case ENCOUNTER_TYPES.EVENT:
+						this.showGlobalEvent();
+						break;
+					case ENCOUNTER_TYPES.SHOP:
+						this.showShop();
+						break;
+					case ENCOUNTER_TYPES.ELITE:
+						this.showEliteChoice();
+						break;
+					default:
+						this.showEnemyChoice();
+				}
+
 
                 elements.gameOverModal.classList.add('hidden');
                 elements.upgradePanelModal.classList.add('hidden'); // Ensure panel is hidden
