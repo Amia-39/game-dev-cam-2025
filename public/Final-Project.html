@@ -195,6 +195,7 @@
             <h1 class="text-3xl font-black text-white uppercase tracking-wider">Ascension Trial</h1>
             <div id="stats-area" class="flex gap-6 items-center">
                 <div class="text-center">
+					<div class="text-yellow-300" id="goldDisplay"></div>
                     <div id="current-energy" class="text-3xl font-extrabold text-yellow-400">3/3</div>
                     <div class="text-sm text-gray-400">Energy</div>
                 </div>
@@ -276,6 +277,7 @@
     </div>
 	
 	<div id="eventContainer" style="display:none;" class="panel"></div>
+	<div id="shopContainer" style="display:none;" class="panel"></div>
 
 
     <!-- Upgrade Panel Modal (Post-Combat Rewards) -->
@@ -440,6 +442,56 @@
             ]
         };
 
+		const CARD_POOL = [
+			{
+				name: "Strike",
+				cost: 1,
+				description: "Deal 6 damage.",
+				type: "attack",
+				effect: (game, target) => {
+					target.currentHp -= 6;
+				}
+			},
+			{
+				name: "Defend",
+				cost: 1,
+				description: "Gain 5 block.",
+				type: "skill",
+				effect: (game) => {
+					game.state.player.block += 5;
+				}
+			},
+			{
+				name: "Bash",
+				cost: 2,
+				description: "Deal 8 damage. Apply 2 Vulnerable.",
+				type: "attack",
+				effect: (game, target) => {
+					target.currentHp -= 8;
+					target.vulnerable = (target.vulnerable || 0) + 2;
+				}
+			},
+			{
+				name: "Quick Slash",
+				cost: 1,
+				description: "Deal 5 damage. Draw 1 card.",
+				type: "attack",
+				effect: (game, target) => {
+					target.currentHp -= 5;
+					game.drawCards(1);
+				}
+			},
+			{
+				name: "Shield Up",
+				cost: 1,
+				description: "Gain 8 block.",
+				type: "skill",
+				effect: (game) => {
+					game.state.player.block += 8;
+				}
+			}
+		];
+
 
         // --- Card Definitions ---
         const CARD_DEFINITIONS = {
@@ -574,6 +626,7 @@
                 block: 0,
                 maxEnergy: 3,
                 currentEnergy: 3,
+				gold: 50,
             },
             // Initialize enemy with default empty values, including new statuses
             enemy: {
@@ -738,6 +791,7 @@
                     const j = Math.floor(Math.random() * (i + 1));
                     [array[i], array[j]] = [array[j], array[i]];
                 }
+				return array;
             },
 
             // Initial setup of the deck
@@ -825,9 +879,63 @@
             },
 			
 			showShop() {
-				console.log("Shop encounter (not implemented yet)");
-				this.showEnemyChoice();
+				const container = document.getElementById("shopContainer");
+				if (!container) {
+					console.warn("Shop container missing");
+					this.showEnemyChoice();
+					return;
+				}
+
+				container.innerHTML = "";
+				container.style.display = "block";
+
+				const title = document.createElement("h2");
+				title.textContent = "Merchant";
+
+				const goldText = document.createElement("p");
+				goldText.textContent = `Gold: ${this.state.player.gold}`;
+
+				container.appendChild(title);
+				container.appendChild(goldText);
+
+				// Pick 3 random cards to sell
+				const shopCards = this.shuffle([...CARD_POOL]).slice(0, 3);
+
+				shopCards.forEach(card => {
+					const cost = card.cost * 10;
+
+					const btn = document.createElement("button");
+					btn.textContent = `${card.name} (${cost}g)`;
+
+					btn.onclick = () => {
+						if (this.state.player.gold < cost) {
+							alert("Not enough gold!");
+							return;
+						}
+
+						this.state.player.gold -= cost;
+						this.state.deck.push(this.createCardInstance(card));
+						card.played = false;
+
+						container.style.display = "none";
+						this.updateUI();
+						this.showEnemyChoice();
+					};
+
+					container.appendChild(btn);
+				});
+
+				const leaveBtn = document.createElement("button");
+				leaveBtn.textContent = "Leave";
+				leaveBtn.onclick = () => {
+					container.style.display = "none";
+					this.showEnemyChoice();
+				};
+
+				container.appendChild(document.createElement("hr"));
+				container.appendChild(leaveBtn);
 			},
+
 
 			showGlobalEvent() {
 				console.log("Event encounter (not implemented yet)");
@@ -857,6 +965,10 @@
                 if(elements.viewDeckButton) {
                     elements.viewDeckButton.textContent = `View Deck (${this.state.deck.length})`;
                 }
+				
+				// Gold
+				document.getElementById("goldDisplay").textContent =
+					`Gold: ${this.state.player.gold}`;
 
                 // Stage UI
                 elements.currentStageText.textContent = `${this.state.currentStage}/${this.state.targetVictories}`;
@@ -915,7 +1027,11 @@
 
                 // Condition 2: Current Enemy HP reaches 0 (Stage Win)
                 if (this.state.enemy.currentHp <= 0) {
+					const goldEarned = 15 + Math.floor(Math.random() * 10);
+					this.state.player.gold += goldEarned;
+
                     this.addLog(`${this.state.enemy.name} defeated!`, true);
+                    this.addLog(`Gained ${goldEarned} gold`);
                     this.startNextStage(); // Will check for victory and then show upgrade/choice
                     return true;
                 }
@@ -971,27 +1087,24 @@
             },
 
             // Player actions
-            playCard(handIndex) {
-                if (this.checkGameOver()) return;
+            playCard(card) {
+				if (card.played || card.exhausted) return;
+				
+				console.log("PLAY ATTEMPT:", card);
 
-                const card = this.state.hand[handIndex];
-                if (card.cost > this.state.player.currentEnergy) {
-                    this.addLog(`Cannot play ${card.name}: Not enough energy (${card.cost} needed).`);
-                    return;
-                }
+				if (this.state.player.currentEnergy < card.cost) {
+					alert("Not enough energy");
+					return;
+				}
 
-                // 1. Pay Cost
-                this.state.player.currentEnergy -= card.cost;
+				this.state.player.currentEnergy -= card.cost;
+				card.played = true;
 
-                // 2. Perform Effect
-                card.effect(this);
+				// ✅ ALWAYS pass enemy
+				card.effect(this, this.state.enemy);
 
-                // 3. Move card from hand to discard
-                this.state.hand.splice(handIndex, 1);
-                this.state.discard.push(card);
-
-                this.updateUI();
-            },
+				this.updateUI();
+			},
 
             // Enemy turn logic
             enemyTurn() {
@@ -1102,6 +1215,33 @@
                 this.addLog(`RARE CHOICE: Permanent Energy increased to ${this.state.player.maxEnergy}!`, true);
                 this.closeUpgradePanel();
             },
+			
+			
+			createCardInstance(cardDef) {
+				if (typeof cardDef.effect !== "function") {
+					console.error("INVALID CARD DEFINITION:", cardDef);
+				}
+
+				return {
+					name: cardDef.name,
+					cost: Number(cardDef.cost) || 0,
+					description: cardDef.description || "",
+					type: cardDef.type || "skill",
+
+					// FORCE effect to be callable
+					effect: typeof cardDef.effect === "function"
+						? cardDef.effect
+						: () => {},
+
+					// runtime state
+					id: crypto.randomUUID(),
+					played: false,
+					exhausted: false,
+					upgraded: false
+				};
+			},
+
+
 
             // Open the upgrade panel
             openUpgradePanel() {
@@ -1318,10 +1458,17 @@
                 this.state.player.block = 0;
                 this.state.player.maxEnergy = 3;
                 this.state.player.currentEnergy = 3;
+				this.state.player.gold = 50;
                 this.state.currentStage = 1; // Start at stage 1 immediately
                 this.state.targetVictories = STAGE_CONFIG.length; // Max stages is determined by config length
 
                 this.state.deck = [];
+				
+				this.state.deck = [];
+				for (let i = 0; i < 2; i++) {
+					this.state.deck.push(this.createCardInstance(CARD_POOL[0]));
+					this.state.deck.push(this.createCardInstance(CARD_POOL[1]));
+				}
                 this.state.hand = [];
                 this.state.discard = [];
                 
