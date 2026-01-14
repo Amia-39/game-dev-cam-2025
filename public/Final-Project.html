@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slay the Spire-like Card Combat</title>
+    <title>Ascension Trial</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
@@ -795,16 +795,7 @@
             },
 
             // Initial setup of the deck
-            initializeDeck() {
-                const initialDeck = [
-                    'strike', 'strike', 'strike', 'strike', 'strike',
-                    'defend', 'defend', 'defend', 'defend', 'defend',
-                    'energy_potion'
-                ];
-                this.state.deck = initialDeck.map(id => CARD_DEFINITIONS[id]);
-                this.shuffle(this.state.deck);
-                this.addLog("Deck initialized and shuffled.", true);
-            },
+           
 
             // Draw a card from the deck to the hand
             drawCard() {
@@ -909,7 +900,7 @@
 
 					btn.onclick = () => {
 						if (this.state.player.gold < cost) {
-							alert("Not enough gold!");
+							game.log("Not enough gold!");
 							return;
 						}
 
@@ -1087,40 +1078,29 @@
             },
 
             // Player actions
-            playCard(card) {
-				if (card.played || card.exhausted) return;
-				
-				console.log("PLAY ATTEMPT:", card);
+            playCard(index) {
+    const card = this.state.hand[index];
+    if (!card) return;
 
-				if (this.state.player.currentEnergy < card.cost) {
-					alert("Not enough energy");
-					return;
-				}
+    if (card.played || card.exhausted) return;
 
-				this.state.player.currentEnergy -= card.cost;
-				card.played = true;
+    if (this.state.player.currentEnergy < card.cost) {
+        game.log("Not enough energy");
+        return;
+    }
 
-				// ✅ ALWAYS pass enemy
-				card.effect(this, this.state.enemy);
+    this.state.player.currentEnergy -= card.cost;
+    card.played = true;
 
-				this.updateUI();
-			},
+    if (typeof card.effect !== "function") {
+        console.error("BROKEN CARD INSTANCE", card);
+        return;
+    }
 
-            // Enemy turn logic
-            enemyTurn() {
-                this.addLog("--- Enemy Turn Start ---", true);
-                if (this.checkGameOver()) return;
+    card.effect(this, this.state.enemy);
 
-                const damage = this.state.enemy.baseDamage;
-                this.takeDamage(this.state.player, damage);
-
-                this.addLog(`${this.state.enemy.name} attacks for ${damage} damage.`);
-                this.addLog("--- Enemy Turn End ---", true);
-                
-                if (this.checkGameOver()) return;
-
-                setTimeout(() => this.startTurn(), 1000); 
-            },
+    this.updateUI();
+},
 
             // Player turn setup
             startTurn() {
@@ -1218,28 +1198,21 @@
 			
 			
 			createCardInstance(cardDef) {
-				if (typeof cardDef.effect !== "function") {
-					console.error("INVALID CARD DEFINITION:", cardDef);
-				}
+    return {
+        name: cardDef.name,
+        cost: Number(cardDef.cost) || 0,
+        description: cardDef.description || "",
+        type: cardDef.type || "skill",
+        effect: cardDef.effect,
 
-				return {
-					name: cardDef.name,
-					cost: Number(cardDef.cost) || 0,
-					description: cardDef.description || "",
-					type: cardDef.type || "skill",
-
-					// FORCE effect to be callable
-					effect: typeof cardDef.effect === "function"
-						? cardDef.effect
-						: () => {},
-
-					// runtime state
-					id: crypto.randomUUID(),
-					played: false,
-					exhausted: false,
-					upgraded: false
-				};
-			},
+        // runtime state
+        id: crypto.randomUUID(),
+        played: false,
+        exhausted: false,
+        upgraded: false
+    };
+}
+,
 
 
 
@@ -1431,6 +1404,64 @@
                 if (this.checkGameOver()) return;
                 this.enemyTurn();
             },
+			
+			enemyTurn() {
+    const enemy = this.state.enemy;
+    const player = this.state.player;
+
+    if (!enemy || enemy.currentHp <= 0) return;
+
+    // Simple enemy attack
+    const damage = enemy.attack || 6;
+
+    // Apply block
+    const blocked = Math.min(player.block, damage);
+    const finalDamage = damage - blocked;
+
+    player.block -= blocked;
+    player.currentHp -= finalDamage;
+
+    if (player.currentHp < 0) player.currentHp = 0;
+
+    // Reset player block at end of enemy turn
+    player.block = 0;
+
+    // Start next turn
+    this.startPlayerTurn();
+},
+
+startPlayerTurn() {
+    const player = this.state.player;
+
+    // Reset energy
+    player.currentEnergy = player.maxEnergy;
+
+    // Clear block at start of turn (STS-style)
+    player.block = 0;
+
+    // Draw cards
+    this.drawCards(5);
+
+    this.updateUI();
+},
+
+drawCards(count) {
+    for (let i = 0; i < count; i++) {
+        if (this.state.deck.length === 0) {
+            this.state.deck = this.shuffle(this.state.discard);
+            this.state.discard = [];
+        }
+
+        const card = this.state.deck.shift();
+        if (!card) return;
+
+        card.played = false;
+        this.state.hand.push(card);
+    }
+},
+
+
+
 
             // Initialize the entire game
             init() {
@@ -1462,13 +1493,16 @@
                 this.state.currentStage = 1; // Start at stage 1 immediately
                 this.state.targetVictories = STAGE_CONFIG.length; // Max stages is determined by config length
 
-                this.state.deck = [];
 				
 				this.state.deck = [];
-				for (let i = 0; i < 2; i++) {
-					this.state.deck.push(this.createCardInstance(CARD_POOL[0]));
-					this.state.deck.push(this.createCardInstance(CARD_POOL[1]));
-				}
+
+const starterCards = ["Strike", "Strike", "Defend", "Defend"];
+
+starterCards.forEach(name => {
+    const def = CARD_POOL.find(c => c.name === name);
+    this.state.deck.push(this.createCardInstance(def));
+});
+
                 this.state.hand = [];
                 this.state.discard = [];
                 
@@ -1477,7 +1511,6 @@
 
                 elements.combatLog.innerHTML = `<h3 class="text-md font-bold mb-1 border-b border-gray-600 pb-1">Combat Log</h3>`;
 
-                this.initializeDeck();
                 
                 // Start by showing the enemy choice for Stage 1
 				const stageData = STAGE_CONFIG.find(s => s.id === this.state.currentStage);
