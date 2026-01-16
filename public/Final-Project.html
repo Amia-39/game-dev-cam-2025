@@ -518,7 +518,7 @@
                 }
             },
             'energy_potion': {
-                name: 'Energy Potion',
+                name: 'Energy_Potion',
                 cost: 0,
                 type: 'utility',
 				image: 'assets/images/testImage.png',
@@ -819,7 +819,8 @@
 
             // Renders the card UI element for hand/choice/deck/collection display
             createCardElement(card, index, mode = 'hand') { // mode: 'hand', 'choice', 'deck', 'collection'
-                const cardEl = document.createElement('div');
+                const imageSrc = card.image || "assets/images/testImage.png";
+				const cardEl = document.createElement('div');
                 cardEl.className = 'card';
                 cardEl.dataset.index = index;
                 cardEl.dataset.cost = card.cost;
@@ -830,6 +831,15 @@
 					card.type === 'block' ? 'border-blue-600' :
 					'border-yellow-600'
 				);
+				
+				cardEl.innerHTML = `
+					<img src="${imageSrc}" alt="${card.name}">
+					<div class="card-cost">${card.cost}</div>
+					<div class="absolute bottom-0 w-full bg-black bg-opacity-60 text-xs p-1 text-center">
+						${card.name}
+					</div>
+					`;
+
 
 
                 if (mode === 'hand') {
@@ -1082,22 +1092,25 @@
     const card = this.state.hand[index];
     if (!card) return;
 
-    if (card.played || card.exhausted) return;
-
     if (this.state.player.currentEnergy < card.cost) {
-        game.log("Not enough energy");
+        this.addLog("Not enough energy");
         return;
     }
 
+    // Spend energy
     this.state.player.currentEnergy -= card.cost;
-    card.played = true;
 
+    // Apply effect
     if (typeof card.effect !== "function") {
         console.error("BROKEN CARD INSTANCE", card);
         return;
     }
 
     card.effect(this, this.state.enemy);
+
+    // 🔥 MOVE CARD TO DISCARD
+    this.state.hand.splice(index, 1);   // remove from hand
+    this.state.discard.push(card);      // add to discard pile
 
     this.updateUI();
 },
@@ -1204,10 +1217,10 @@
         description: cardDef.description || "",
         type: cardDef.type || "skill",
         effect: cardDef.effect,
+		image: cardDef.image || "assets/images/testImage.png",
 
         // runtime state
         id: crypto.randomUUID(),
-        played: false,
         exhausted: false,
         upgraded: false
     };
@@ -1349,7 +1362,7 @@
                 
                 // Set the chosen enemy as the current enemy
                 this.state.enemy = enemyDefinition;
-				elements.enemyImage.src = enemyDefinition.image;
+				elements.enemyImage.src = enemyDefinition.image || "assets/images/testImage.png";
 				elements.enemyImage.alt = enemyDefinition.name;
                 this.addLog(`**Path chosen: Challenging ${this.state.enemy.name}**`, true);
 
@@ -1496,7 +1509,7 @@ drawCards(count) {
 				
 				this.state.deck = [];
 
-const starterCards = ["Strike", "Strike", "Defend", "Defend"];
+const starterCards = ["Strike", "Strike", "Strike", "Strike", "Defend", "Defend", "Defend", "Defend",];
 
 starterCards.forEach(name => {
     const def = CARD_POOL.find(c => c.name === name);
